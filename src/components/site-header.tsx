@@ -49,8 +49,10 @@ export default function SiteHeader() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <header className="relative z-20 border-b border-navy/10 bg-white">
-      <div className="container-shell flex h-[88px] items-center justify-between gap-6">
+    <header
+      className={`site-header ${pathname === "/" ? "site-header-home" : ""}`}
+    >
+      <div className="site-header-inner">
         <Brand />
         <nav
           aria-label="Main navigation"
@@ -69,7 +71,7 @@ export default function SiteHeader() {
         </nav>
         <Link
           href="/get-involved"
-          className="button-primary hidden md:inline-flex"
+          className="header-involve hidden md:inline-flex"
         >
           Get involved <ArrowUpRight size={16} />
         </Link>
@@ -78,7 +80,7 @@ export default function SiteHeader() {
           aria-expanded={menuOpen}
           aria-controls="mobile-navigation"
           onClick={() => setMenuOpen(!menuOpen)}
-          className="flex h-11 w-11 items-center justify-center rounded-lg border border-navy/15 md:hidden"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-navy/15 md:hidden"
         >
           {menuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
@@ -87,7 +89,7 @@ export default function SiteHeader() {
         <nav
           id="mobile-navigation"
           aria-label="Mobile navigation"
-          className="absolute right-0 left-0 border-b-2 border-navy bg-white px-6 pb-6 md:hidden"
+          className="mobile-navigation-panel md:hidden"
         >
           {[...links, { href: "/get-involved", label: "Get involved" }].map(
             (link) => (

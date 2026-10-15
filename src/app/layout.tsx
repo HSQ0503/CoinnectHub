@@ -3,6 +3,7 @@ import { Manrope } from "next/font/google";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
 import "./globals.css";
+import "./homepage.css";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -13,7 +14,7 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   metadataBase: new URL("https://coinnecthub.hsq0503.chatgpt.site"),
   title: {
-    default: "CoinnectHub | Money makes more sense here",
+    default: "CoinnectHub | Learn money by doing",
     template: "%s | CoinnectHub",
   },
   description:
