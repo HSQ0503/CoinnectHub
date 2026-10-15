@@ -56,7 +56,7 @@ export default function SiteHeader() {
         <Brand />
         <nav
           aria-label="Main navigation"
-          className="hidden items-center gap-9 md:flex"
+          className={`hidden items-center gap-9 ${pathname !== "/" ? "md:flex" : ""}`}
         >
           {links.map((link) => (
             <Link
@@ -71,16 +71,16 @@ export default function SiteHeader() {
         </nav>
         <Link
           href="/get-involved"
-          className="header-involve hidden md:inline-flex"
+          className={`header-involve ${pathname === "/" ? "inline-flex" : "hidden md:inline-flex"}`}
         >
-          Get involved <ArrowUpRight size={16} />
+          Get involved {pathname !== "/" && <ArrowUpRight size={16} />}
         </Link>
         <button
           aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
           aria-controls="mobile-navigation"
           onClick={() => setMenuOpen(!menuOpen)}
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-navy/15 md:hidden"
+          className={`${pathname === "/" ? "hidden" : "flex md:hidden"} h-11 w-11 items-center justify-center rounded-full border border-navy/15`}
         >
           {menuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>

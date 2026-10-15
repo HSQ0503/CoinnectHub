@@ -2,7 +2,7 @@
 
 Website for a youth financial literacy nonprofit. Built with Next.js App Router, TypeScript, and Tailwind CSS.
 
-The homepage uses the selected Brilliant references for its composition, with original finance demos and a coin mascot named Penny. Its savings jar animates while visible; visitors can pause animations, and reduced-motion preferences are respected. Budget, savings, and headline demos also work by keyboard.
+The homepage uses the selected Brilliant references for its composition, with original finance demos and a coin mascot named Penny. Its savings lesson animates while visible; visitors can pause animations, and reduced-motion preferences are respected. Budget, savings, and headline demos also work by keyboard.
 
 ## Run locally
 
