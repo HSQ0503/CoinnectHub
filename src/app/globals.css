@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-blue: #0875cf;
+  --color-yellow: #ffca20;
+  --color-navy: #061b45;
+  --font-sans: var(--font-manrope);
+}
+
+:root {
+  color-scheme: light;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  background: #fff;
+  color: #061b45;
+  font-family: var(--font-manrope), Arial, sans-serif;
+}
+::selection {
+  background: #ffca20;
+  color: #061b45;
+}
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a,
+input[type="range"] {
+  touch-action: manipulation;
+}
+button:not(:disabled),
+summary,
+select {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+:focus-visible {
+  outline: 3px solid #087bd8;
+  outline-offset: 5px;
+}
+.bg-blue :focus-visible,
+.bg-navy :focus-visible {
+  outline-color: #ffca20;
+}
+input,
+select,
+textarea {
+  font: inherit;
+}
+input[type="range"] {
+  accent-color: #087bd8;
+}
+
+@layer components {
+  .container-shell {
+    @apply mx-auto w-full max-w-[1280px] px-6 md:px-10 lg:px-14;
+  }
+  .button-primary {
+    @apply inline-flex min-h-12 items-center justify-center gap-3 rounded-lg bg-navy px-6 py-3.5 text-sm font-extrabold text-white transition-colors hover:bg-blue;
+  }
+  .button-secondary {
+    @apply inline-flex min-h-12 items-center justify-center gap-3 rounded-lg border border-navy/25 bg-white px-6 py-3.5 text-sm font-extrabold text-navy transition-colors hover:border-blue hover:text-blue;
+  }
+  .button-yellow {
+    @apply inline-flex min-h-12 items-center justify-center gap-3 rounded-lg bg-yellow px-6 py-3.5 text-sm font-extrabold text-navy transition-colors hover:bg-white;
+  }
+  .eyebrow {
+    @apply mb-5 flex items-center gap-2.5 text-sm font-bold;
+  }
+  .page-heading {
+    @apply text-4xl leading-[1.12] font-extrabold tracking-[-0.045em] md:text-6xl;
+  }
+  .body-copy {
+    @apply text-base leading-8 text-navy/75 md:text-lg;
+  }
+  .paper-panel {
+    @apply rounded-2xl border border-navy/15 bg-white;
+  }
+  .section-title {
+    @apply text-3xl leading-[1.17] font-extrabold tracking-[-0.04em] md:text-[42px];
+  }
+  .text-link {
+    @apply inline-flex min-h-11 items-center gap-2 text-sm font-extrabold underline-offset-4 hover:underline;
+  }
+}
+
+.hero-illustration {
+  animation: illustration-enter 650ms ease-out both;
+}
+.hero-copy {
+  animation: copy-enter 500ms ease-out both;
+}
+@keyframes illustration-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) rotate(1deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+  }
+}
+@keyframes copy-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
