@@ -17,7 +17,7 @@ const interests = {
     title: "Volunteering",
     description: "A class visit, design, tutoring, or something else.",
     opening:
-      "I want to volunteer with CoinnectHub. Tell me what help you actually need.",
+      "I want to volunteer with CoinnectHub. I would love to hear about opportunities to help.",
   },
   school: {
     title: "Schools & partnerships",
@@ -57,7 +57,7 @@ export function InvolvementForm() {
   }
 
   return (
-    <div className="min-w-0 rounded-3xl border-2 border-navy bg-white p-6 md:p-9">
+    <div className="inquiry-form">
       <div className="mb-8 flex items-start gap-4 border-b border-navy/15 pb-7">
         <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-yellow">
           <FileText size={24} strokeWidth={1.6} aria-hidden="true" />
@@ -67,8 +67,8 @@ export function InvolvementForm() {
             Prepare an inquiry
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-navy/75">
-            Contact form preview. This draft does not send messages. Contact
-            details will be added before launch.
+            Choose an option and write a few lines. You can preview your note
+            and download a copy to keep.
           </p>
         </div>
       </div>
@@ -80,14 +80,14 @@ export function InvolvementForm() {
         }}
       >
         <fieldset>
-          <legend className="mb-4 font-bold">I'm interested in</legend>
+          <legend className="mb-4 font-bold">I’m interested in</legend>
           <div className="grid gap-3 sm:grid-cols-2">
             {(["volunteer", "school"] as const).map((option) => {
               const Icon = option === "volunteer" ? Users : School;
               return (
                 <label
                   key={option}
-                  className={`relative flex cursor-pointer flex-col rounded-2xl border-2 p-4 transition-colors focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-navy ${interest === option ? "border-navy bg-yellow" : "border-navy/20 bg-white hover:border-navy/50"}`}
+                  className={`relative flex cursor-pointer flex-col rounded-2xl border p-4 transition-colors focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-navy ${interest === option ? "border-blue bg-sky" : "border-navy/15 bg-white hover:border-blue"}`}
                 >
                   <span className="mb-5 flex items-center justify-between">
                     <Icon size={25} strokeWidth={1.6} aria-hidden="true" />
@@ -150,7 +150,7 @@ export function InvolvementForm() {
           Preview inquiry <ArrowRight size={18} aria-hidden="true" />
         </button>
         <p className="mt-3 text-center text-xs leading-relaxed text-navy/70">
-          This stays in your browser. We don't receive it.
+          This stays in your browser. We don’t receive it.
         </p>
       </form>
 
@@ -177,7 +177,8 @@ export function InvolvementForm() {
               className="mt-4 flex items-start gap-2 text-sm leading-relaxed text-navy"
             >
               <Check size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
-              Download started. Send the file when we post an email.
+              Download started. Keep your note until a contact address is
+              available.
             </p>
           )}
         </section>

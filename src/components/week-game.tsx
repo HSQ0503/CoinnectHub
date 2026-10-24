@@ -27,8 +27,10 @@ const icons = {
 const dollars = (amount: number) => `$${amount.toLocaleString("en-US")}`;
 
 function choiceCopy(pay: number, amount: number) {
-  if (amount === 0) return { title: `Keep ${dollars(pay)}`, detail: "for this week" };
-  if (amount === pay) return { title: `Save ${dollars(pay)}`, detail: "all of it" };
+  if (amount === 0)
+    return { title: `Keep ${dollars(pay)}`, detail: "for this week" };
+  if (amount === pay)
+    return { title: `Save ${dollars(pay)}`, detail: "all of it" };
   return {
     title: `Save ${dollars(amount)}`,
     detail: `Keep ${dollars(pay - amount)}`,
@@ -60,15 +62,14 @@ export default function WeekGame() {
   if (!run) {
     const customRead = readCustomGoal(price, saved);
     return (
-      <section className="rounded-[1.5rem] border-2 border-navy bg-white p-6 sm:p-9">
+      <section className="rounded-[1.5rem] border border-navy/15 bg-white p-6 sm:p-9">
         <p className="eyebrow">Five weeks</p>
         <h2 className="text-3xl font-extrabold tracking-tight">
-          Pick a goal. Then the weeks start.
+          What are you saving for?
         </h2>
         <p className="mt-3 max-w-xl text-base leading-7 text-navy/80">
-          Headphones are the default, $120 with $40 saved. You get $10, $15, or
-          $20 each week. Every button is allowed. The week count shows what the
-          choice did.
+          Start with $40 toward a $120 pair of headphones, or pick another goal.
+          Choose a weekly allowance, then decide how much to save each week.
         </p>
         <div className="mt-8 grid gap-3 sm:grid-cols-3">
           {GOALS.map((goal) => {
@@ -83,7 +84,7 @@ export default function WeekGame() {
                   setCustom(false);
                   setGoalId(goal.id);
                 }}
-                className={`rounded-2xl border-2 p-4 text-left transition-colors ${selected ? "border-navy bg-yellow" : "border-navy/20 bg-white hover:border-navy"}`}
+                className={`rounded-2xl border p-4 text-left transition-colors ${selected ? "border-blue bg-sky" : "border-navy/20 bg-white hover:border-navy"}`}
               >
                 <Icon size={28} strokeWidth={1.6} aria-hidden="true" />
                 <span className="mt-4 block text-lg font-extrabold">
@@ -113,24 +114,30 @@ export default function WeekGame() {
                 maxLength={40}
                 onChange={(event) => setName(event.target.value)}
                 placeholder="Your goal"
-                className="mt-2 min-h-12 w-full rounded-xl border-2 border-navy/20 px-3 font-semibold focus:border-navy focus:outline-none"
+                className="mt-2 min-h-12 w-full rounded-xl border border-navy/20 px-3 font-semibold focus:border-navy focus:outline-none"
               />
             </label>
             <NumberField
               label="Price"
               value={price}
-              error={attempted && !customRead.ok ? customRead.priceError : undefined}
+              error={
+                attempted && !customRead.ok ? customRead.priceError : undefined
+              }
               onChange={setPrice}
             />
             <NumberField
               label="Already saved"
               value={saved}
-              error={attempted && !customRead.ok ? customRead.savedError : undefined}
+              error={
+                attempted && !customRead.ok ? customRead.savedError : undefined
+              }
               onChange={setSaved}
             />
           </div>
         )}
-        <p className="mt-8 text-sm font-extrabold">What do you get each week?</p>
+        <p className="mt-8 text-sm font-extrabold">
+          What do you get each week?
+        </p>
         <div className="mt-3 grid grid-cols-3 gap-2 sm:max-w-md">
           {PAYS.map((amount) => (
             <button
@@ -138,7 +145,7 @@ export default function WeekGame() {
               type="button"
               aria-pressed={pay === amount}
               onClick={() => setPay(amount)}
-              className={`min-h-12 rounded-xl border-2 text-sm font-extrabold transition-colors ${pay === amount ? "border-navy bg-navy text-white" : "border-navy/20 hover:border-navy"}`}
+              className={`min-h-12 rounded-xl border text-sm font-extrabold transition-colors ${pay === amount ? "border-navy bg-navy text-white" : "border-navy/20 hover:border-navy"}`}
             >
               {dollars(amount)}
             </button>
@@ -177,15 +184,17 @@ export default function WeekGame() {
   if (step === "done") {
     const added = view.saved - run.startSaved;
     return (
-      <section className="mx-auto max-w-3xl overflow-hidden rounded-[1.5rem] border-2 border-navy bg-yellow">
+      <section className="mx-auto max-w-3xl overflow-hidden rounded-[1.5rem] border border-navy/15 bg-sky">
         <div className="p-6 sm:p-10">
-          <p className="eyebrow">Five weeks, one goal</p>
+          <p className="eyebrow">Your savings plan</p>
           <h2
             ref={headingRef}
             tabIndex={-1}
-            className="mt-4 text-4xl font-extrabold tracking-tight focus:outline-none sm:text-5xl"
+            className="mt-4 text-3xl font-semibold tracking-tight focus:outline-none sm:text-4xl"
           >
-            {view.reached ? "The price is covered." : "Here's where it landed."}
+            {view.reached
+              ? "You reached your goal."
+              : "Your five-week snapshot."}
           </h2>
           <p className="mt-5 max-w-xl text-lg leading-8">
             {run.committed.length === 0
@@ -201,7 +210,11 @@ export default function WeekGame() {
             <Stat label="Kept for the weeks" value={dollars(view.kept)} />
             <Stat
               label="Your pace"
-              value={view.pace === 0 ? "$0/wk" : `${dollars(Math.round(view.pace))}/wk`}
+              value={
+                view.pace === 0
+                  ? "$0/wk"
+                  : `${dollars(Math.round(view.pace))}/wk`
+              }
             />
           </div>
           <p className="mt-8 max-w-xl text-sm leading-7 font-semibold">
@@ -220,7 +233,7 @@ export default function WeekGame() {
             Play another goal
           </button>
         </div>
-        <p className="border-t-2 border-navy bg-white p-6 text-sm leading-7">
+        <p className="border-t border-navy/15 bg-white p-6 text-sm leading-7">
           Same amount each week in this game. No interest, taxes, or price
           changes, and nothing is saved to CoinnectHub.
         </p>
@@ -234,7 +247,7 @@ export default function WeekGame() {
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8">
-      <section className="rounded-[1.5rem] border-2 border-navy bg-yellow p-6 sm:p-9">
+      <section className="rounded-[1.5rem] border border-navy/15 bg-sky p-6 sm:p-9">
         <div className="flex items-center justify-between gap-3">
           <p className="eyebrow">
             Week {run.committed.length + 1} / {WEEK_COUNT}
@@ -256,9 +269,7 @@ export default function WeekGame() {
           {beat.title}
         </h2>
         <p className="mt-3 max-w-md text-base leading-7">{beat.detail}</p>
-        <p className="mt-8 text-sm font-extrabold tracking-wide uppercase">
-          {run.name}
-        </p>
+        <p className="mt-8 text-sm font-bold">{run.name}</p>
         <p className="mt-2 text-4xl font-extrabold tracking-tight">
           {dollars(view.saved)}
           <span className="ml-2 text-lg font-bold text-navy/70">
@@ -266,7 +277,7 @@ export default function WeekGame() {
           </span>
         </p>
         <div
-          className="mt-4 h-4 overflow-hidden rounded-full border-2 border-navy bg-white"
+          className="mt-4 h-4 overflow-hidden rounded-full border border-navy/15 bg-white"
           role="progressbar"
           aria-valuenow={Math.floor(progress)}
           aria-valuemin={0}
@@ -280,30 +291,30 @@ export default function WeekGame() {
         </div>
         <div className="mt-6 grid grid-cols-2 gap-4" aria-live="polite">
           <div>
-            <p className="text-xs font-extrabold tracking-wide uppercase">
-              If you keep this pace
+            <p className="text-xs font-bold">If you keep this pace</p>
+            <p className="mt-1 text-3xl font-extrabold">
+              {weeksText(view.weeks)}
             </p>
-            <p className="mt-1 text-3xl font-extrabold">{weeksText(view.weeks)}</p>
             <p className="text-sm text-navy/75">
               {view.weeks === 0 ? "the goal is covered" : "at this pace"}
             </p>
           </div>
           <div>
-            <p className="text-xs font-extrabold tracking-wide uppercase">
-              Full amount from now
+            <p className="text-xs font-bold">Full amount from now</p>
+            <p className="mt-1 text-3xl font-extrabold">
+              {weeksText(fromHere)}
             </p>
-            <p className="mt-1 text-3xl font-extrabold">{weeksText(fromHere)}</p>
             <p className="text-sm text-navy/75">saving the full amount</p>
           </div>
         </div>
       </section>
 
-      <section className="rounded-[1.5rem] border-2 border-navy bg-white p-6 sm:p-9">
+      <section className="rounded-[1.5rem] border border-navy/15 bg-white p-6 sm:p-9">
         <h3 className="text-2xl font-extrabold tracking-tight">
           You have {dollars(run.pay)} this week.
         </h3>
         <p className="mt-2 text-sm leading-6 text-navy/75">
-          Switch between them. The weeks on the left change before you lock.
+          Try each option to see how your plan changes, then lock your choice.
         </p>
         <div className="mt-6 grid gap-3">
           {choiceAmounts(run.pay).map((amount) => {
@@ -315,10 +326,14 @@ export default function WeekGame() {
                 type="button"
                 aria-pressed={selected}
                 onClick={() => setRun({ ...run, pending: amount })}
-                className={`min-h-16 rounded-2xl border-2 px-4 py-3 text-left transition-colors ${selected ? "border-navy bg-yellow" : "border-navy/20 hover:border-navy"}`}
+                className={`min-h-16 rounded-2xl border px-4 py-3 text-left transition-colors ${selected ? "border-blue bg-sky" : "border-navy/20 hover:border-navy"}`}
               >
-                <span className="block text-lg font-extrabold">{copy.title}</span>
-                <span className="mt-1 block text-sm text-navy/75">{copy.detail}</span>
+                <span className="block text-lg font-extrabold">
+                  {copy.title}
+                </span>
+                <span className="mt-1 block text-sm text-navy/75">
+                  {copy.detail}
+                </span>
               </button>
             );
           })}
@@ -326,6 +341,7 @@ export default function WeekGame() {
         <button
           type="button"
           className="button-primary mt-6 w-full disabled:opacity-40"
+          disabled={run.pending === null}
           onClick={() => setRun(lockWeek(run))}
         >
           {run.committed.length === WEEK_COUNT - 1 ||
@@ -340,8 +356,8 @@ export default function WeekGame() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border-2 border-navy bg-white px-4 py-3">
-      <p className="text-xs font-extrabold tracking-wide uppercase">{label}</p>
+    <div className="rounded-2xl border border-navy/15 bg-white px-4 py-3">
+      <p className="text-xs font-bold">{label}</p>
       <p className="mt-1 text-2xl font-extrabold">{value}</p>
     </div>
   );
@@ -371,7 +387,7 @@ function NumberField({
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${id}-error` : undefined}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-2 min-h-12 w-full rounded-xl border-2 border-navy/20 px-3 font-semibold focus:border-navy focus:outline-none"
+        className="mt-2 min-h-12 w-full rounded-xl border border-navy/20 px-3 font-semibold focus:border-navy focus:outline-none"
       />
       {error && (
         <p id={`${id}-error`} className="mt-2 text-sm font-semibold">

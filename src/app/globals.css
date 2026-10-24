@@ -4,7 +4,9 @@
   --color-blue: #0875cf;
   --color-yellow: #ffca20;
   --color-navy: #061b45;
+  --color-sky: #eaf4fc;
   --font-sans: var(--font-manrope);
+  --font-display: var(--font-sora);
 }
 
 :root {
@@ -17,6 +19,13 @@ body {
   background: #fff;
   color: #061b45;
   font-family: var(--font-manrope), Arial, sans-serif;
+}
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-sora), Arial, sans-serif;
+  text-wrap: balance;
 }
 ::selection {
   background: #ffca20;
@@ -43,11 +52,12 @@ button:disabled {
   cursor: not-allowed;
 }
 :focus-visible {
-  outline: 3px solid #087bd8;
+  outline: 3px solid #0875cf;
   outline-offset: 5px;
 }
 .bg-blue :focus-visible,
-.bg-navy :focus-visible {
+.bg-navy :focus-visible,
+.mission-section :focus-visible {
   outline-color: #ffca20;
 }
 input,
@@ -56,69 +66,119 @@ textarea {
   font: inherit;
 }
 input[type="range"] {
-  accent-color: #087bd8;
+  accent-color: #0875cf;
 }
 
 @layer components {
   .container-shell {
-    @apply mx-auto w-full max-w-[1280px] px-6 md:px-10 lg:px-14;
+    @apply mx-auto w-full max-w-[1240px] px-6 md:px-10 lg:px-14;
   }
   .button-primary {
-    @apply inline-flex min-h-12 items-center justify-center gap-3 rounded-lg bg-navy px-6 py-3.5 text-sm font-extrabold text-white transition-colors hover:bg-blue;
+    @apply inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-navy px-6 py-3.5 text-sm font-bold text-white transition-colors hover:bg-blue;
   }
   .button-secondary {
-    @apply inline-flex min-h-12 items-center justify-center gap-3 rounded-lg border border-navy/25 bg-white px-6 py-3.5 text-sm font-extrabold text-navy transition-colors hover:border-blue hover:text-blue;
+    @apply inline-flex min-h-12 items-center justify-center gap-3 rounded-full border border-navy/20 bg-white px-6 py-3.5 text-sm font-bold text-navy transition-colors hover:border-blue hover:text-blue;
   }
   .button-yellow {
-    @apply inline-flex min-h-12 items-center justify-center gap-3 rounded-lg bg-yellow px-6 py-3.5 text-sm font-extrabold text-navy transition-colors hover:bg-white;
+    @apply inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-yellow px-6 py-3.5 text-sm font-bold text-navy transition-colors hover:bg-white;
   }
   .eyebrow {
-    @apply mb-5 flex items-center gap-2.5 text-sm font-bold;
+    @apply mb-5 flex items-center gap-2.5 text-sm font-semibold text-blue;
   }
   .page-heading {
-    @apply text-4xl leading-[1.12] font-extrabold tracking-[-0.045em] md:text-6xl;
-  }
-  .body-copy {
-    @apply text-base leading-8 text-navy/75 md:text-lg;
-  }
-  .paper-panel {
-    @apply rounded-2xl border border-navy/15 bg-white;
+    font-size: clamp(2.4rem, 5.4vw, 4.4rem);
+    line-height: 1.12;
+    letter-spacing: -0.055em;
+    font-weight: 600;
   }
   .section-title {
-    @apply text-3xl leading-[1.17] font-extrabold tracking-[-0.04em] md:text-[42px];
+    font-size: clamp(2rem, 3.8vw, 3rem);
+    line-height: 1.16;
+    letter-spacing: -0.05em;
+    font-weight: 600;
+  }
+  .body-copy {
+    @apply text-base leading-8 text-navy/70 md:text-lg;
+  }
+  .paper-panel {
+    @apply rounded-3xl border border-navy/15 bg-white;
   }
   .text-link {
-    @apply inline-flex min-h-11 items-center gap-2 text-sm font-extrabold underline-offset-4 hover:underline;
+    @apply inline-flex min-h-11 items-center gap-3 text-sm font-bold underline-offset-4 hover:underline;
   }
   .display-serif {
-    font-family: Georgia, "Times New Roman", serif;
+    font-family: var(--font-sora), Arial, sans-serif;
   }
 }
 
-.hero-illustration {
-  animation: illustration-enter 650ms ease-out both;
+.section-space {
+  padding-top: 100px;
+  padding-bottom: 100px;
 }
-.hero-copy {
-  animation: copy-enter 500ms ease-out both;
+.page-intro {
+  padding: 72px 0 64px;
+  background: #eaf4fc;
 }
-@keyframes illustration-enter {
-  from {
-    opacity: 0;
-    transform: translateY(12px) rotate(1deg);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) rotate(0);
-  }
+.page-intro .body-copy {
+  max-width: 580px;
+  margin-top: 24px;
 }
-@keyframes copy-enter {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
+.page-intro .eyebrow {
+  margin-bottom: 22px;
+}
+.game-page {
+  padding-top: 36px;
+  padding-bottom: 80px;
+}
+.game-page-heading {
+  max-width: 760px;
+  margin-bottom: 36px;
+}
+.game-page-heading .page-heading {
+  font-size: clamp(2rem, 4.4vw, 3.5rem);
+}
+.game-page-heading .eyebrow {
+  margin: 28px 0 14px;
+}
+.game-page-heading .body-copy {
+  margin-top: 18px;
+}
+.game-experience h2 {
+  font-weight: 600;
+  letter-spacing: -0.045em;
+}
+.game-experience h3 {
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+.game-experience .eyebrow {
+  color: #061b45;
+}
+.game-experience button {
+  transition:
+    background-color 160ms,
+    border-color 160ms,
+    color 160ms;
+}
+.game-disclaimer {
+  margin-top: 24px;
+  max-width: 750px;
+  color: #57657c;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+@media (max-width: 767px) {
+  .section-space {
+    padding-top: 64px;
+    padding-bottom: 64px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .page-intro {
+    padding: 48px 0;
+  }
+  .game-page {
+    padding-top: 24px;
+    padding-bottom: 56px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -131,4 +191,8 @@ input[type="range"] {
     animation: none !important;
     transition: none !important;
   }
+}
+
+.game-experience h2[tabindex="-1"]:focus {
+  outline: none;
 }

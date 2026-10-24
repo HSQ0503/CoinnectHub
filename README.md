@@ -2,7 +2,7 @@
 
 Website for a youth financial literacy nonprofit. Built with Next.js App Router, TypeScript, and Tailwind CSS.
 
-The homepage uses the selected Brilliant references for its composition, with original finance demos and a coin mascot named Penny. Its savings lesson animates while visible; visitors can pause animations, and reduced-motion preferences are respected. Budget, savings, and headline demos also work by keyboard.
+The site pairs Sora headings with Manrope body text and uses CoinnectHub’s blue, yellow, and navy palette. Penny, the coin mascot, introduces an interactive savings lesson. The homepage budget and headline demos work by keyboard, and transitions respect reduced-motion preferences.
 
 ## Run locally
 
@@ -29,4 +29,4 @@ The static export is written to `out/`. Routes include Home, About, Games & tool
 - Add confirmed contact details in `src/app/get-involved/page.tsx`. The inquiry builder only previews and downloads text; it does not send or store submissions.
 - Confirm final nonprofit copy and Instagram handle, then remove the draft’s `noindex` setting in `src/app/layout.tsx`.
 
-The supplied logo is preserved in `public/coinnect-logo.png`. Website blue is slightly deeper than the approximate brand swatch to support white body text and yellow headings. Calculations and game state run in the browser, with no accounts or analytics.
+The supplied logo is preserved in `public/coinnect-logo.png`. The shared styles in `src/app/globals.css` and `src/app/homepage.css` cover page layouts, learning demos, and responsive navigation. Calculations and game state run in the browser, with no accounts or analytics.

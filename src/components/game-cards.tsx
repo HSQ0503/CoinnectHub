@@ -4,65 +4,47 @@ import { GoalIllustration, StockIllustration } from "./illustrations";
 
 export default function GameCards() {
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <Link
-        href="/games/savings"
-        className="group overflow-hidden rounded-2xl border border-navy/15 bg-white transition-colors hover:border-blue"
-      >
-        <div className="h-56 border-b border-navy/10 bg-blue/5 px-3 sm:h-64">
+    <div className="game-card-grid">
+      <Link href="/games/savings" className="game-card">
+        <div className="game-card-art savings-art">
+          <span className="game-subject">Saving & planning</span>
           <GoalIllustration />
         </div>
-        <div className="p-6 sm:p-8">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <span className="rounded-full bg-blue/7 px-3 py-1 text-xs font-bold text-navy">
-              Saving
-            </span>
-            <span className="flex items-center gap-1.5 text-xs text-navy/65">
-              <Clock3 size={13} /> 5 weeks
-            </span>
-          </div>
-          <h3 className="text-[25px] font-extrabold tracking-tight">
-            How long to buy it?
-          </h3>
-          <p className="mt-3 max-w-[370px] text-sm leading-7 text-navy/70">
-            Headphones start at $40 of $120. You get $10, $15, or $20 a week
-            and decide what to keep.
+        <div className="game-card-copy">
+          <span className="game-duration">
+            <Clock3 size={14} aria-hidden="true" /> Five virtual weeks
+          </span>
+          <h3>How long to buy it?</h3>
+          <p>
+            A pair of headphones. A concert ticket. Make a few choices and see
+            how your savings add up.
           </p>
-          <div className="mt-6 flex items-center justify-between border-t border-navy/10 pt-5 text-sm font-extrabold">
-            Play five weeks{" "}
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-navy text-white transition-colors group-hover:bg-blue">
-              <ArrowUpRight size={18} />
+          <div className="game-card-action">
+            Play the savings game{" "}
+            <span>
+              <ArrowUpRight size={21} aria-hidden="true" />
             </span>
           </div>
         </div>
       </Link>
-      <Link
-        href="/games/stocks"
-        className="group overflow-hidden rounded-2xl border border-navy/15 bg-white transition-colors hover:border-blue"
-      >
-        <div className="h-56 border-b border-navy/10 bg-yellow/15 px-3 sm:h-64">
+      <Link href="/games/stocks" className="game-card">
+        <div className="game-card-art stocks-art">
+          <span className="game-subject">Stocks & decisions</span>
           <StockIllustration />
         </div>
-        <div className="p-6 sm:p-8">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <span className="rounded-full bg-yellow/25 px-3 py-1 text-xs font-bold text-navy">
-              Stocks
-            </span>
-            <span className="flex items-center gap-1.5 text-xs text-navy/65">
-              <Clock3 size={13} /> About 2 minutes
-            </span>
-          </div>
-          <h3 className="text-[25px] font-extrabold tracking-tight">
-            What moves a stock?
-          </h3>
-          <p className="mt-3 max-w-[370px] text-sm leading-7 text-navy/70">
-            Loop Bikes, Pixel Play, and Sunbeam Snacks are made up. You sort
-            each line onto buyers, sellers, or not sure.
+        <div className="game-card-copy">
+          <span className="game-duration">
+            <Clock3 size={14} aria-hidden="true" /> Three stories to explore
+          </span>
+          <h3>What moves a stock?</h3>
+          <p>
+            More sales. Higher costs. A delayed launch. Discover why one
+            headline can tell more than one story.
           </p>
-          <div className="mt-6 flex items-center justify-between border-t border-navy/10 pt-5 text-sm font-extrabold">
-            Sort a headline{" "}
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-navy text-white transition-colors group-hover:bg-blue">
-              <ArrowUpRight size={18} />
+          <div className="game-card-action">
+            Play the headline game{" "}
+            <span>
+              <ArrowUpRight size={21} aria-hidden="true" />
             </span>
           </div>
         </div>

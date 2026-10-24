@@ -1,134 +1,88 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { Target, Headphones } from "lucide-react";
+import CoinMascot from "./coin-mascot";
 
-const weeklyOptions = [5, 10, 20];
-
-export default function HeroFinanceLesson({ motion }: { motion: boolean }) {
-  const [selected, setSelected] = useState(1);
-  const [manual, setManual] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const container = useRef<HTMLDivElement>(null);
-  const weekly = weeklyOptions[selected];
+export default function HeroFinanceLesson() {
+  const [weekly, setWeekly] = useState(10);
   const weeks = Math.ceil(80 / weekly);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => setVisible(entry.isIntersecting),
-      { threshold: 0.25 },
-    );
-    if (container.current) observer.observe(container.current);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!motion || !visible || manual) return;
-    const interval = window.setInterval(
-      () => setSelected((value) => (value + 1) % weeklyOptions.length),
-      3200,
-    );
-    return () => window.clearInterval(interval);
-  }, [motion, visible, manual]);
-
   return (
-    <div
-      className="hero-lesson"
-      ref={container}
-      aria-label="Interactive weekly savings lesson"
-    >
-      <div className="finance-lesson-sheet">
-        <div className="finance-lesson-board" aria-hidden="true">
-          <div className="lesson-board-label">
-            <span>A $120 goal</span>
-            <span>$40 already saved</span>
-          </div>
-          <div className="lesson-board-chart">
-            {Array.from({ length: 8 }, (_, index) => {
-              const balance = Math.min(120, 40 + weekly * (index + 1));
-              return (
-                <div className="lesson-chart-column" key={index}>
-                  <span
-                    className={
-                      balance === 120
-                        ? "lesson-chart-bar at-goal"
-                        : "lesson-chart-bar"
-                    }
-                    style={{ height: `${(balance / 120) * 100}%` }}
-                  />
-                  <small>{index + 1}</small>
-                </div>
-              );
-            })}
-            <span className="lesson-chart-goal">$120</span>
-          </div>
-          <p>Weeks of saving</p>
-        </div>
-        <div className="finance-lesson-working">
-          <div>
-            <span className="lesson-line-number">1</span>
-            <span>Your goal</span>
-            <strong>$120</strong>
-          </div>
-          <div>
-            <span className="lesson-line-number">2</span>
-            <span>Already saved</span>
-            <strong>$40</strong>
-          </div>
-          <div>
-            <span className="lesson-line-number">3</span>
-            <span>Save each week</span>
-            <strong className="lesson-value">${weekly}</strong>
-          </div>
-          <div className="lesson-equation">
-            <span className="lesson-line-number">4</span>
-            <span>
-              <b>$80</b> ÷ <b>${weekly}</b> = <strong>{weeks} weeks</strong>
-            </span>
-          </div>
-        </div>
+    <div className="goal-stage">
+      <div className="goal-stage-ring" aria-hidden="true" />
+      <div className="goal-stage-caption">
+        <span /> A little today. A little closer.
       </div>
-      <div className="lesson-choice-area">
-        <p>What if you saved a different amount?</p>
+      <div
+        className="hero-goal-card"
+        aria-label="Interactive weekly savings lesson"
+      >
+        <div className="goal-card-header">
+          <span>Your next big thing</span>
+          <Target size={19} aria-hidden="true" />
+        </div>
+        <div className="goal-product">
+          <div className="headphone-drawing">
+            <Headphones strokeWidth={1.25} aria-hidden="true" />
+          </div>
+          <div>
+            <p>A new pair of headphones</p>
+            <strong>
+              $120<span> savings goal</span>
+            </strong>
+          </div>
+        </div>
+        <div className="goal-progress-label">
+          <span>$40 saved</span>
+          <span>$80 to go</span>
+        </div>
         <div
-          className="lesson-choice-group"
-          role="group"
-          aria-label="Choose a weekly savings amount"
+          className="goal-progress"
+          role="progressbar"
+          aria-label="Already saved toward headphones"
+          aria-valuenow={40}
+          aria-valuemin={0}
+          aria-valuemax={120}
         >
-          {weeklyOptions.map((amount, index) => (
-            <button
-              type="button"
-              key={amount}
-              aria-pressed={selected === index}
-              onClick={() => {
-                setManual(true);
-                setSelected(index);
-              }}
-            >
-              ${amount}
-              <span>/week</span>
-            </button>
-          ))}
+          <span />
         </div>
-        {!manual && (
-          <svg
-            viewBox="0 0 50 60"
-            className="lesson-demo-cursor"
-            aria-hidden="true"
-            style={{ left: `${14 + selected * 32}%` }}
-          >
-            <path
-              d="M7 4L42 31L25 34L18 52Z"
-              fill="#061B45"
-              stroke="white"
-              strokeWidth="4"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
+        <fieldset className="hero-weekly-options">
+          <legend>How much could you save each week?</legend>
+          <div>
+            {[5, 10, 20].map((amount) => (
+              <button
+                key={amount}
+                type="button"
+                aria-pressed={weekly === amount}
+                onClick={() => setWeekly(amount)}
+              >
+                ${amount}
+                <span>/ week</span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <div className="goal-arrival" aria-live="polite">
+          <div>
+            <span>You could get there in</span>
+            <strong>{weeks} weeks</strong>
+          </div>
+          <div className="arrival-bars" aria-hidden="true">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <span key={n} style={{ height: `${16 + n * 7}px` }} />
+            ))}
+          </div>
+        </div>
       </div>
-      <p className="sr-only" aria-live={manual ? "polite" : "off"}>
-        Saving ${weekly} per week, you would reach this goal in {weeks} weeks.
-      </p>
+      <div className="hero-penny">
+        <CoinMascot />
+        <span>
+          Meet Penny.
+          <br />
+          Your learning buddy.
+        </span>
+      </div>
     </div>
   );
 }

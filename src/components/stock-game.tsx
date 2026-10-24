@@ -71,15 +71,15 @@ export default function StockGame() {
 
   if (finished) {
     return (
-      <section className="mx-auto max-w-3xl overflow-hidden rounded-[1.5rem] border-2 border-navy bg-yellow text-center">
+      <section className="mx-auto max-w-3xl overflow-hidden rounded-[1.5rem] border border-navy/15 bg-sky text-center">
         <div className="px-6 py-12 sm:p-14">
           <p className="eyebrow">Three stories. One scale.</p>
           <h2
             ref={headingRef}
             tabIndex={-1}
-            className="mt-4 text-4xl font-extrabold tracking-tight focus:outline-none sm:text-5xl"
+            className="mt-4 text-3xl font-semibold tracking-tight focus:outline-none sm:text-4xl"
           >
-            Here's the count.
+            Here’s what you found.
           </h2>
           <p className="mt-6 text-xl font-bold">
             {score} of {total} pieces landed on the same side as our reading.
@@ -93,12 +93,16 @@ export default function StockGame() {
             These are guesses about interest. The game does not tell you the
             next price.
           </p>
-          <button type="button" onClick={restart} className="button-primary mt-8">
+          <button
+            type="button"
+            onClick={restart}
+            className="button-primary mt-8"
+          >
             <RotateCcw size={18} aria-hidden="true" />
             Play the three again
           </button>
         </div>
-        <div className="border-t-2 border-navy bg-white p-6 text-sm leading-relaxed">
+        <div className="border-t border-navy/15 bg-white p-6 text-sm leading-relaxed">
           Keep exploring:{" "}
           <a
             className="font-bold underline decoration-2 underline-offset-4"
@@ -116,11 +120,9 @@ export default function StockGame() {
 
   return (
     <div className="mx-auto grid max-w-4xl gap-6">
-      <section className="overflow-hidden rounded-[1.5rem] border-2 border-navy bg-yellow">
-        <div className="flex items-center justify-between gap-3 border-b-2 border-navy px-6 py-4 sm:px-8">
-          <span className="text-xs font-extrabold tracking-[0.13em] uppercase">
-            The Coinnect Brief
-          </span>
+      <section className="overflow-hidden rounded-[1.5rem] border border-navy/15 bg-sky">
+        <div className="flex items-center justify-between gap-3 border-b border-navy/15 px-6 py-4 sm:px-8">
+          <span className="text-xs font-bold">The Coinnect Brief</span>
           <span className="rounded-full border border-navy px-3 py-1 text-xs font-bold">
             Story {roundIndex + 1} / {ROUNDS.length} · Fictional
           </span>
@@ -130,28 +132,24 @@ export default function StockGame() {
           <h2
             ref={headingRef}
             tabIndex={-1}
-            className="mt-4 max-w-2xl text-[clamp(2.2rem,4vw,3.4rem)] leading-[1.08] font-extrabold tracking-[-0.04em] focus:outline-none"
+            className="mt-4 max-w-2xl text-[clamp(1.8rem,3.6vw,2.7rem)] leading-[1.08] font-extrabold tracking-[-0.04em] focus:outline-none"
           >
             {round.headline}
           </h2>
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border-2 border-navy/25 bg-white/55 p-4">
-              <p className="text-xs font-extrabold tracking-wide uppercase">
-                Expected
-              </p>
+            <div className="rounded-2xl border border-navy/15 bg-white/55 p-4">
+              <p className="text-xs font-bold">Expected</p>
               <p className="mt-2 leading-7 font-bold">{round.expected}</p>
             </div>
-            <div className="rounded-2xl border-2 border-navy bg-white p-4">
-              <p className="text-xs font-extrabold tracking-wide uppercase">
-                What happened
-              </p>
+            <div className="rounded-2xl border border-navy/15 bg-white p-4">
+              <p className="text-xs font-bold">What happened</p>
               <p className="mt-2 leading-7 font-bold">{round.happened}</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="rounded-[1.5rem] border-2 border-navy bg-white p-6 sm:p-9">
+      <section className="rounded-[1.5rem] border border-navy/15 bg-white p-6 sm:p-9">
         <h3 className="text-2xl font-extrabold tracking-tight">
           Sort the pieces.
         </h3>
@@ -178,11 +176,11 @@ export default function StockGame() {
               <div
                 key={fact.id}
                 role="group"
-                aria-labelledby={`fact-${round.company}-${fact.id}`}
-                className={`rounded-2xl border-2 p-4 ${revealed && matches ? "border-navy bg-yellow/45" : "border-navy/15"}`}
+                aria-labelledby={`fact-${roundIndex}-${fact.id}`}
+                className={`rounded-2xl border p-4 ${revealed && matches ? "border-navy bg-sky" : "border-navy/15"}`}
               >
                 <p
-                  id={`fact-${round.company}-${fact.id}`}
+                  id={`fact-${roundIndex}-${fact.id}`}
                   className="text-base font-extrabold"
                 >
                   {fact.text}
@@ -195,7 +193,7 @@ export default function StockGame() {
                       aria-pressed={placed === side.id}
                       disabled={revealed}
                       onClick={() => place(fact.id, side.id)}
-                      className={`min-h-12 rounded-xl border-2 px-2 text-sm font-extrabold transition-colors ${placed === side.id ? "border-navy bg-navy text-white" : "border-navy/20 hover:border-navy"}`}
+                      className={`min-h-12 rounded-xl border px-2 text-[13px] font-bold whitespace-nowrap transition-colors sm:text-sm ${placed === side.id ? "border-navy bg-navy text-white" : "border-navy/20 hover:border-navy"}`}
                     >
                       {side.label}
                     </button>
@@ -204,7 +202,9 @@ export default function StockGame() {
                 {revealed && (
                   <p className="mt-3 text-sm leading-6">
                     <span className="font-extrabold">
-                      {matches ? "Same side we used. " : "We put this one somewhere else. "}
+                      {matches
+                        ? "Same side we used. "
+                        : "We put this one somewhere else. "}
                     </span>
                     {fact.why}
                   </p>
@@ -221,7 +221,11 @@ export default function StockGame() {
           )}
         </div>
         {revealed ? (
-          <button type="button" onClick={next} className="button-primary mt-6 w-full">
+          <button
+            type="button"
+            onClick={next}
+            className="button-primary mt-6 w-full"
+          >
             {roundIndex === ROUNDS.length - 1 ? "See your count" : "Next story"}
             <ArrowRight size={18} aria-hidden="true" />
           </button>
@@ -265,12 +269,12 @@ function Scale({
           />
         )}
         <span
-          className="absolute top-1/2 size-11 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-navy bg-yellow transition-[left] duration-300 motion-reduce:transition-none"
+          className="absolute top-1/2 size-11 -translate-x-1/2 -translate-y-1/2 rounded-full border border-navy bg-yellow transition-[left] duration-300 motion-reduce:transition-none"
           style={{ left: `${player}%` }}
           aria-hidden="true"
         />
       </div>
-      <div className="mt-1 flex justify-between text-xs font-extrabold tracking-wide uppercase">
+      <div className="mt-1 flex justify-between text-xs font-bold">
         <span>Sellers</span>
         <span>Buyers</span>
       </div>
