@@ -90,6 +90,9 @@ input[type="range"] {
   .text-link {
     @apply inline-flex min-h-11 items-center gap-2 text-sm font-extrabold underline-offset-4 hover:underline;
   }
+  .display-serif {
+    font-family: Georgia, "Times New Roman", serif;
+  }
 }
 
 .hero-illustration {

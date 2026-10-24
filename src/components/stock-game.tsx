@@ -1,149 +1,101 @@
 "use client";
 
+import { ArrowRight, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import {
-  ArrowDownRight,
-  ArrowRight,
-  ArrowUpRight,
-  Check,
-  Lightbulb,
-  Minus,
-  RotateCcw,
-} from "lucide-react";
-import { useRef, useState } from "react";
+  ROUNDS,
+  SIDES,
+  allPlaced,
+  factTotal,
+  leanLabel,
+  matchedFacts,
+  placedSides,
+  tilt,
+  tiltPercent,
+  type Side,
+} from "@/lib/headline-game";
 
-type Choice = "buying" | "selling" | "mixed";
-
-const choices = [
-  {
-    id: "buying",
-    label: "More buying interest",
-    detail: "Investors see a reason to be optimistic.",
-    icon: ArrowUpRight,
-  },
-  {
-    id: "selling",
-    label: "More selling interest",
-    detail: "Investors see a reason to be cautious.",
-    icon: ArrowDownRight,
-  },
-  {
-    id: "mixed",
-    label: "It’s mixed",
-    detail: "There are reasons on both sides.",
-    icon: Minus,
-  },
-] as const;
-
-const rounds: {
-  company: string;
-  category: string;
-  headline: string;
-  news: string;
-  answer: Choice;
-  explanation: string;
-  lesson: string;
-}[] = [
-  {
-    company: "Loop Bikes",
-    category: "A surprise in the sales report",
-    headline: "More riders. More orders.",
-    news: "Loop Bikes reports far more bike orders than investors expected. The company says its costs have stayed steady.",
-    answer: "buying",
-    explanation:
-      "Stronger sales with steady costs could mean higher profits. That may make more investors interested in owning a piece of the company.",
-    lesson: "What matters is how news compares with what investors expected.",
-  },
-  {
-    company: "Pixel Play",
-    category: "A change of plans",
-    headline: "The big release will have to wait.",
-    news: "Pixel Play unexpectedly delays its biggest game until next year. It now expects lower sales this year, while development costs keep rising.",
-    answer: "selling",
-    explanation:
-      "Lower expected sales and higher costs can make investors less confident about future profits. Some might want to sell, though others may still believe in the company’s longer-term plans.",
-    lesson:
-      "Investors can respond to expectations about the future, before the results arrive.",
-  },
-  {
-    company: "Sunbeam Snacks",
-    category: "Two sides to the story",
-    headline: "A hit snack. A bigger bill.",
-    news: "Demand for Sunbeam’s new snack is stronger than expected. But ingredients now cost much more, and the company hasn’t said how the two changes will affect profits.",
-    answer: "mixed",
-    explanation:
-      "More demand could help sales, while higher ingredient costs could reduce profits. Investors need more information to judge which effect matters more.",
-    lesson:
-      "One headline rarely tells the whole story. Different investors can reach different conclusions.",
-  },
-];
+const total = factTotal(ROUNDS);
 
 export default function StockGame() {
   const [roundIndex, setRoundIndex] = useState(0);
-  const [selected, setSelected] = useState<Choice | null>(null);
+  const [placements, setPlacements] = useState<Record<string, Side>>({});
+  const [revealed, setRevealed] = useState(false);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const round = rounds[roundIndex];
-  const isCorrect = selected === round.answer;
+  const round = ROUNDS[roundIndex];
+  const playerTilt = tilt(
+    placedSides(round.facts, placements),
+    round.facts.length,
+  );
+  const answerTilt = tilt(
+    round.facts.map((fact) => fact.side),
+    round.facts.length,
+  );
+  const ready = allPlaced(round.facts, placements);
+  const aligned = Math.abs(playerTilt - answerTilt) < 0.05;
 
-  function choose(choice: Choice) {
-    if (selected) return;
-    setSelected(choice);
-    if (choice === round.answer) setScore((current) => current + 1);
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, [roundIndex, finished]);
+
+  function place(id: string, side: Side) {
+    if (revealed) return;
+    setPlacements((current) => ({ ...current, [id]: side }));
   }
 
-  function nextRound() {
-    if (roundIndex === rounds.length - 1) {
+  function reveal() {
+    if (!ready || revealed) return;
+    setScore((current) => current + matchedFacts(round.facts, placements));
+    setRevealed(true);
+  }
+
+  function next() {
+    if (roundIndex === ROUNDS.length - 1) {
       setFinished(true);
-    } else {
-      setRoundIndex((current) => current + 1);
-      setSelected(null);
+      return;
     }
-    requestAnimationFrame(() => headingRef.current?.focus());
+    setRoundIndex((current) => current + 1);
+    setPlacements({});
+    setRevealed(false);
   }
 
   function restart() {
     setRoundIndex(0);
-    setSelected(null);
+    setPlacements({});
+    setRevealed(false);
     setScore(0);
     setFinished(false);
-    requestAnimationFrame(() => headingRef.current?.focus());
   }
 
   if (finished) {
     return (
       <section className="mx-auto max-w-3xl overflow-hidden rounded-[1.5rem] border-2 border-navy bg-yellow text-center">
         <div className="px-6 py-12 sm:p-14">
-          <span className="mx-auto flex size-16 items-center justify-center rounded-full border-2 border-navy bg-white">
-            <Check size={30} aria-hidden="true" />
-          </span>
-          <p className="eyebrow mt-7">Three headlines. A new perspective.</p>
+          <p className="eyebrow">Three stories. One scale.</p>
           <h2
             ref={headingRef}
             tabIndex={-1}
             className="mt-4 text-4xl font-extrabold tracking-tight focus:outline-none sm:text-5xl"
           >
-            There’s more to the story.
+            Here's the count.
           </h2>
           <p className="mt-6 text-xl font-bold">
-            {score} of 3 matched the strongest explanation.
+            {score} of {total} pieces landed on the same side as our reading.
           </p>
           <p className="mx-auto mt-4 max-w-xl leading-relaxed">
-            A stock is a small ownership share in a company. Its price reflects
-            what buyers and sellers are willing to pay, shaped by expectations,
-            new information, and uncertainty.
+            A stock is a small piece of a company. The price is whatever buyers
+            and sellers agree to pay after they hear something new, like a
+            delayed game or a sales number that beat the forecast.
           </p>
           <p className="mx-auto mt-4 max-w-xl font-semibold leading-relaxed">
-            These choices explain possible investor reactions. They don’t
-            predict what a stock’s price will do.
+            These are guesses about interest. The game does not tell you the
+            next price.
           </p>
-          <button
-            type="button"
-            onClick={restart}
-            className="button-primary mt-8 inline-flex items-center gap-3"
-          >
+          <button type="button" onClick={restart} className="button-primary mt-8">
             <RotateCcw size={18} aria-hidden="true" />
-            Play again
+            Play the three again
           </button>
         </div>
         <div className="border-t-2 border-navy bg-white p-6 text-sm leading-relaxed">
@@ -163,131 +115,171 @@ export default function StockGame() {
   }
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[1fr_1.04fr] lg:gap-8">
-      <section
-        className="overflow-hidden rounded-[1.5rem] border-2 border-navy bg-yellow"
-        aria-labelledby="stock-headline"
-      >
+    <div className="mx-auto grid max-w-4xl gap-6">
+      <section className="overflow-hidden rounded-[1.5rem] border-2 border-navy bg-yellow">
         <div className="flex items-center justify-between gap-3 border-b-2 border-navy px-6 py-4 sm:px-8">
           <span className="text-xs font-extrabold tracking-[0.13em] uppercase">
             The Coinnect Brief
           </span>
           <span className="rounded-full border border-navy px-3 py-1 text-xs font-bold">
-            Fictional news
+            Story {roundIndex + 1} / {ROUNDS.length} · Fictional
           </span>
         </div>
         <div className="p-6 sm:p-9">
           <p className="eyebrow">{round.company}</p>
           <h2
-            id="stock-headline"
             ref={headingRef}
             tabIndex={-1}
-            className="mt-5 text-[clamp(2.5rem,5vw,4rem)] leading-[1.06] font-extrabold tracking-[-0.05em] focus:outline-none"
+            className="mt-4 max-w-2xl text-[clamp(2.2rem,4vw,3.4rem)] leading-[1.08] font-extrabold tracking-[-0.04em] focus:outline-none"
           >
             {round.headline}
           </h2>
-          <p className="mt-6 text-lg leading-relaxed">{round.news}</p>
-          <div className="mt-9 flex items-center gap-3 border-t border-navy/25 pt-5">
-            <span
-              className="size-2 shrink-0 rounded-full bg-navy"
-              aria-hidden="true"
-            />
-            <p className="text-sm font-semibold">{round.category}</p>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border-2 border-navy/25 bg-white/55 p-4">
+              <p className="text-xs font-extrabold tracking-wide uppercase">
+                Expected
+              </p>
+              <p className="mt-2 leading-7 font-bold">{round.expected}</p>
+            </div>
+            <div className="rounded-2xl border-2 border-navy bg-white p-4">
+              <p className="text-xs font-extrabold tracking-wide uppercase">
+                What happened
+              </p>
+              <p className="mt-2 leading-7 font-bold">{round.happened}</p>
+            </div>
           </div>
         </div>
       </section>
 
-      <section
-        aria-labelledby="stock-choice-heading"
-        className="rounded-[1.5rem] border-2 border-navy bg-white p-6 sm:p-9"
-      >
-        <div className="mb-7 flex items-center justify-between gap-4">
-          <p className="eyebrow">Round {roundIndex + 1} / 3</p>
-          <div className="flex gap-2" aria-hidden="true">
-            {rounds.map((_, index) => (
-              <span
-                key={index}
-                className={`h-2 w-9 rounded-full ${index <= roundIndex ? "bg-navy" : "bg-navy/15"}`}
-              />
-            ))}
-          </div>
-        </div>
-        <h3
-          id="stock-choice-heading"
-          className="text-2xl font-extrabold leading-tight tracking-tight"
-        >
-          How might investors respond?
+      <section className="rounded-[1.5rem] border-2 border-navy bg-white p-6 sm:p-9">
+        <h3 className="text-2xl font-extrabold tracking-tight">
+          Sort the pieces.
         </h3>
-        <p className="mt-3 text-sm leading-relaxed">
-          Choose the reaction this news gives the strongest reason for.
+        <p className="mt-2 max-w-xl text-sm leading-6 text-navy/75">
+          Sellers, buyers, or not sure. The dot moves when you pick.
         </p>
-        <div className="mt-6 grid gap-3">
-          {choices.map(({ id, label, detail, icon: Icon }) => {
-            const picked = selected === id;
-            const bestAnswer = selected !== null && round.answer === id;
+        <Scale
+          player={tiltPercent(playerTilt)}
+          answer={revealed ? tiltPercent(answerTilt) : null}
+          aligned={aligned}
+          label={
+            revealed
+              ? leanLabel(answerTilt)
+              : ready
+                ? leanLabel(playerTilt)
+                : "Place every piece to tip the scale."
+          }
+        />
+        <div className="mt-8 grid gap-5">
+          {round.facts.map((fact) => {
+            const placed = placements[fact.id];
+            const matches = revealed && placed === fact.side;
             return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => choose(id)}
-                disabled={selected !== null}
-                aria-pressed={picked}
-                className={`flex min-h-20 w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-colors enabled:cursor-pointer enabled:hover:border-navy enabled:hover:bg-yellow/30 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-navy ${bestAnswer ? "border-navy bg-yellow" : picked ? "border-navy bg-white" : "border-navy/20 bg-white"}`}
+              <div
+                key={fact.id}
+                role="group"
+                aria-labelledby={`fact-${round.company}-${fact.id}`}
+                className={`rounded-2xl border-2 p-4 ${revealed && matches ? "border-navy bg-yellow/45" : "border-navy/15"}`}
               >
-                <Icon size={24} className="shrink-0" aria-hidden="true" />
-                <span>
-                  <span className="block text-base font-extrabold">
-                    {label}
-                  </span>
-                  <span className="mt-1 block text-xs leading-relaxed sm:text-sm">
-                    {detail}
-                  </span>
-                  {picked && (
-                    <span className="mt-2 block text-xs font-bold">
-                      Your choice{bestAnswer ? " (best fit)" : ""}
+                <p
+                  id={`fact-${round.company}-${fact.id}`}
+                  className="text-base font-extrabold"
+                >
+                  {fact.text}
+                </p>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {SIDES.map((side) => (
+                    <button
+                      key={side.id}
+                      type="button"
+                      aria-pressed={placed === side.id}
+                      disabled={revealed}
+                      onClick={() => place(fact.id, side.id)}
+                      className={`min-h-12 rounded-xl border-2 px-2 text-sm font-extrabold transition-colors ${placed === side.id ? "border-navy bg-navy text-white" : "border-navy/20 hover:border-navy"}`}
+                    >
+                      {side.label}
+                    </button>
+                  ))}
+                </div>
+                {revealed && (
+                  <p className="mt-3 text-sm leading-6">
+                    <span className="font-extrabold">
+                      {matches ? "Same side we used. " : "We put this one somewhere else. "}
                     </span>
-                  )}
-                  {bestAnswer && !picked && (
-                    <span className="mt-2 block text-xs font-bold">
-                      Best fit
-                    </span>
-                  )}
-                </span>
-              </button>
+                    {fact.why}
+                  </p>
+                )}
+              </div>
             );
           })}
         </div>
-        <div aria-live="polite" aria-atomic="true">
-          {selected && (
-            <div className="mt-7 border-t border-navy/20 pt-6">
-              <p className="flex items-center gap-2 font-extrabold">
-                <Lightbulb size={20} className="shrink-0" aria-hidden="true" />
-                {isCorrect
-                  ? "You spotted the signal."
-                  : "Here’s another way to read it."}
-              </p>
-              <p className="mt-3 text-sm leading-relaxed">
-                {round.explanation}
-              </p>
-              <p className="mt-3 text-sm font-bold leading-relaxed">
-                {round.lesson}
-              </p>
-            </div>
+        <div aria-live="polite">
+          {revealed && (
+            <p className="mt-6 border-t border-navy/15 pt-5 text-base leading-7 font-semibold">
+              {round.lesson}
+            </p>
           )}
         </div>
-        {selected && (
+        {revealed ? (
+          <button type="button" onClick={next} className="button-primary mt-6 w-full">
+            {roundIndex === ROUNDS.length - 1 ? "See your count" : "Next story"}
+            <ArrowRight size={18} aria-hidden="true" />
+          </button>
+        ) : (
           <button
             type="button"
-            onClick={nextRound}
-            className="button-primary mt-6 inline-flex w-full items-center justify-between gap-4"
+            onClick={reveal}
+            disabled={!ready}
+            className="button-primary mt-6 w-full disabled:opacity-40"
           >
-            {roundIndex === rounds.length - 1
-              ? "See the big picture"
-              : "Next headline"}
-            <ArrowRight size={19} aria-hidden="true" />
+            Tip the scale
           </button>
         )}
       </section>
+    </div>
+  );
+}
+
+function Scale({
+  player,
+  answer,
+  aligned,
+  label,
+}: {
+  player: number;
+  answer: number | null;
+  aligned: boolean;
+  label: string;
+}) {
+  return (
+    <div className="mt-8">
+      <div className="relative mx-8 h-16">
+        <div className="absolute top-1/2 right-0 left-0 h-1 -translate-y-1/2 rounded-full bg-navy/15" />
+        <div className="absolute top-1/2 left-0 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-navy/30" />
+        <div className="absolute top-1/2 right-0 size-3 translate-x-1/2 -translate-y-1/2 rounded-full bg-navy/30" />
+        {answer !== null && !aligned && (
+          <span
+            className="absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-navy bg-white"
+            style={{ left: `${answer}%` }}
+            aria-hidden="true"
+          />
+        )}
+        <span
+          className="absolute top-1/2 size-11 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-navy bg-yellow transition-[left] duration-300 motion-reduce:transition-none"
+          style={{ left: `${player}%` }}
+          aria-hidden="true"
+        />
+      </div>
+      <div className="mt-1 flex justify-between text-xs font-extrabold tracking-wide uppercase">
+        <span>Sellers</span>
+        <span>Buyers</span>
+      </div>
+      <p className="mt-3 text-sm font-bold" aria-live="polite">
+        {label}
+        {answer !== null && !aligned
+          ? " The open dot is where we sorted them."
+          : ""}
+      </p>
     </div>
   );
 }

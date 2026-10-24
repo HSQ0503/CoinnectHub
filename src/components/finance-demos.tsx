@@ -7,7 +7,7 @@ export function BudgetDemo() {
   const [saved, setSaved] = useState(20);
   return (
     <div className="budget-demo demo-surface">
-      <p className="demo-kicker">You have $50. What’s your plan?</p>
+      <p className="demo-kicker">You've got $50. Split it.</p>
       <div className="budget-coins" aria-hidden="true">
         {Array.from({ length: 10 }, (_, i) => (
           <span className={i < saved / 5 ? "is-saving" : "is-spending"} key={i}>
@@ -36,7 +36,7 @@ export function BudgetDemo() {
         value={saved}
         onChange={(event) => setSaved(Number(event.target.value))}
       />
-      <p className="demo-hint">Move the slider. Find your balance.</p>
+      <p className="demo-hint">Drag it. $20 saved leaves $30 to spend.</p>
     </div>
   );
 }
@@ -84,14 +84,14 @@ export function GoalDemo() {
         ))}
       </div>
       <p className="goal-demo-result" aria-live="polite">
-        Your goal, in <strong>{weeks} weeks.</strong>
+        About <strong>{weeks} weeks</strong> to $120.
       </p>
     </div>
   );
 }
 
 export function NewsDemo() {
-  const [selected, setSelected] = useState<"buy" | "sell" | null>(null);
+  const [selected, setSelected] = useState<"buyers" | "sellers" | null>(null);
   return (
     <div className="news-demo demo-surface">
       <div className="news-demo-top">
@@ -105,31 +105,33 @@ export function NewsDemo() {
           <br />
           Same costs.
         </h4>
-        <p>Sales are stronger than investors expected.</p>
+        <p>Investors expected an ordinary report.</p>
       </div>
-      <p className="news-demo-question">What might investors think?</p>
+      <p className="news-demo-question">
+        Where does "far more orders than expected" belong?
+      </p>
       <div className="news-demo-choices">
         <button
           type="button"
-          aria-pressed={selected === "buy"}
-          onClick={() => setSelected("buy")}
+          aria-pressed={selected === "buyers"}
+          onClick={() => setSelected("buyers")}
         >
-          More interested
+          Buyers
         </button>
         <button
           type="button"
-          aria-pressed={selected === "sell"}
-          onClick={() => setSelected("sell")}
+          aria-pressed={selected === "sellers"}
+          onClick={() => setSelected("sellers")}
         >
-          More cautious
+          Sellers
         </button>
       </div>
       <p className="news-demo-feedback" aria-live="polite">
-        {selected === "buy"
-          ? "That’s a reasonable reaction. More sales at steady costs could mean higher profits."
-          : selected === "sell"
-            ? "Take another look: stronger sales with steady costs could make investors more interested."
-            : "Choose a response to see the reasoning."}
+        {selected === "buyers"
+          ? "Buyers. People expected an ordinary report, and orders beat that."
+          : selected === "sellers"
+            ? "Check the forecast. Orders beat it, and costs stayed flat. That piece sits with buyers."
+            : "Pick a side."}
       </p>
     </div>
   );

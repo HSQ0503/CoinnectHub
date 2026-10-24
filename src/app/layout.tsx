@@ -14,11 +14,11 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   metadataBase: new URL("https://coinnecthub.hsq0503.chatgpt.site"),
   title: {
-    default: "CoinnectHub | Learn money by doing",
+    default: "CoinnectHub | Money games for teens",
     template: "%s | CoinnectHub",
   },
   description:
-    "Explore money, build a savings plan, and discover what moves a stock. CoinnectHub makes financial literacy approachable for the next generation.",
+    "Free games for ages 13 to 18: a five-week savings run and a sort of three made-up stock headlines. No account.",
   icons: { icon: "/coinnect-logo.png" },
   robots: { index: false, follow: false },
 };

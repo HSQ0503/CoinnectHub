@@ -15,21 +15,21 @@ export default function GameCards() {
         <div className="p-6 sm:p-8">
           <div className="mb-4 flex items-center justify-between gap-3">
             <span className="rounded-full bg-blue/7 px-3 py-1 text-xs font-bold text-navy">
-              Saving & planning
+              Saving
             </span>
             <span className="flex items-center gap-1.5 text-xs text-navy/65">
-              <Clock3 size={13} /> At your pace
+              <Clock3 size={13} /> 5 weeks
             </span>
           </div>
           <h3 className="text-[25px] font-extrabold tracking-tight">
             How long to buy it?
           </h3>
           <p className="mt-3 max-w-[370px] text-sm leading-7 text-navy/70">
-            That thing you’ve been saving for? Give it a plan. See how a little
-            each week adds up.
+            Headphones start at $40 of $120. You get $10, $15, or $20 a week
+            and decide what to keep.
           </p>
           <div className="mt-6 flex items-center justify-between border-t border-navy/10 pt-5 text-sm font-extrabold">
-            Make a savings plan{" "}
+            Play five weeks{" "}
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-navy text-white transition-colors group-hover:bg-blue">
               <ArrowUpRight size={18} />
             </span>
@@ -46,21 +46,21 @@ export default function GameCards() {
         <div className="p-6 sm:p-8">
           <div className="mb-4 flex items-center justify-between gap-3">
             <span className="rounded-full bg-yellow/25 px-3 py-1 text-xs font-bold text-navy">
-              Stocks & decisions
+              Stocks
             </span>
             <span className="flex items-center gap-1.5 text-xs text-navy/65">
-              <Clock3 size={13} /> About 1 minute
+              <Clock3 size={13} /> About 2 minutes
             </span>
           </div>
           <h3 className="text-[25px] font-extrabold tracking-tight">
             What moves a stock?
           </h3>
           <p className="mt-3 max-w-[370px] text-sm leading-7 text-navy/70">
-            A company makes the news. What might investors do? Read the story
-            and make your call.
+            Loop Bikes, Pixel Play, and Sunbeam Snacks are made up. You sort
+            each line onto buyers, sellers, or not sure.
           </p>
           <div className="mt-6 flex items-center justify-between border-t border-navy/10 pt-5 text-sm font-extrabold">
-            Play the news{" "}
+            Sort a headline{" "}
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-navy text-white transition-colors group-hover:bg-blue">
               <ArrowUpRight size={18} />
             </span>

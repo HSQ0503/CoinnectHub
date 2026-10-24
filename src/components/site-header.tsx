@@ -56,7 +56,7 @@ export default function SiteHeader() {
         <Brand />
         <nav
           aria-label="Main navigation"
-          className={`hidden items-center gap-9 ${pathname !== "/" ? "md:flex" : ""}`}
+          className="hidden items-center gap-9 md:flex"
         >
           {links.map((link) => (
             <Link
@@ -80,7 +80,7 @@ export default function SiteHeader() {
           aria-expanded={menuOpen}
           aria-controls="mobile-navigation"
           onClick={() => setMenuOpen(!menuOpen)}
-          className={`${pathname === "/" ? "hidden" : "flex md:hidden"} h-11 w-11 items-center justify-center rounded-full border border-navy/15`}
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-navy/15 md:hidden"
         >
           {menuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>

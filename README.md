@@ -21,11 +21,11 @@ npm test
 npm run build
 ```
 
-The static export is written to `out/`. Routes include Home, About, Games & tools, Savings calculator, Stock news game, and Contact & get involved.
+The static export is written to `out/`. Routes include Home, About, Games & tools, a five-week savings game, a headline-sorting stock game, and Contact & get involved.
 
 ## Before public launch
 
-- Replace Mr. Ferla’s portrait and biography placeholders in `src/app/about/page.tsx`.
+- Add Mr. Ferla’s portrait on the About page when a photo is ready. His story is already written there.
 - Add confirmed contact details in `src/app/get-involved/page.tsx`. The inquiry builder only previews and downloads text; it does not send or store submissions.
 - Confirm final nonprofit copy and Instagram handle, then remove the draft’s `noindex` setting in `src/app/layout.tsx`.
 

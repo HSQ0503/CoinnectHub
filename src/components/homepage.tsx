@@ -48,30 +48,31 @@ export default function Homepage() {
         <div className="learning-shell learning-hero-grid">
           <div className="learning-hero-copy">
             <h1>
-              Make sense
+              Five weeks.
               <br />
-              of money and
+              Three headlines.
               <br />
-              the markets.
+              No login.
             </h1>
             <p>
-              Explore saving and investing through interactive activities.
+              Two free games for ages 13 to 18. One is a five-week savings
+              run. The other sorts fake stock headlines.
               <br />
-              Free financial education for teenagers.
+              No account.
             </p>
             <div className="hero-audience-actions">
               <Link href="/games" className="learning-button">
-                I’m a learner
+                I'm a learner
               </Link>
               <Link
                 href="/get-involved"
                 className="learning-button learning-button-white"
               >
-                I’m a parent or teacher
+                I'm a parent or teacher
               </Link>
             </div>
             <p className="hero-footnote">
-              A nonprofit initiative. No account needed.
+              Nonprofit. No account.
             </p>
           </div>
           <div className="hero-lesson-wrap">
@@ -108,17 +109,17 @@ export default function Homepage() {
         <div>
           <Coins size={31} strokeWidth={1.5} aria-hidden="true" />
           <h2>100% free</h2>
-          <p>Financial education for everyone</p>
+          <p>No login, no fee</p>
         </div>
         <div>
           <BookOpen size={31} strokeWidth={1.5} aria-hidden="true" />
-          <h2>2 interactive tools</h2>
-          <p>Practice saving and explore stocks</p>
+          <h2>2 games</h2>
+          <p>Five savings weeks, three headlines</p>
         </div>
         <div>
           <GraduationCap size={33} strokeWidth={1.5} aria-hidden="true" />
-          <h2>Made for teens</h2>
-          <p>Designed for ages 13–18</p>
+          <h2>Ages 13–18</h2>
+          <p>Middle school and high school</p>
         </div>
       </section>
 
@@ -133,10 +134,10 @@ export default function Homepage() {
         </button>
         <span className="sr-only" role="status">
           {greeted
-            ? "Hello from Penny! Choose a topic below to start exploring."
+            ? "Penny says hi. Saving and stocks are the two buttons under this."
             : ""}
         </span>
-        <h2 id="meet-penny">Meet Penny, your guide to money</h2>
+        <h2 id="meet-penny">This is Penny</h2>
         <div
           className="learning-topic-toggle"
           role="tablist"
@@ -192,17 +193,13 @@ export default function Homepage() {
               </div>
               <div className="feature-copy">
                 <h3>
-                  Decide where
-                  <br />
-                  your money goes.
+                  You've got $50.
                 </h3>
                 <p>
-                  You have $50. How much would you spend, and how much would you
-                  keep for later?
+                  Yellow coins stay. Blue ones get spent.
                 </p>
                 <p>
-                  Move the slider to try a different split. Every dollar you
-                  save is a dollar you can put toward a future purchase.
+                  Drag the slider. At $20 saved, $30 is left for this week.
                 </p>
               </div>
             </div>
@@ -212,20 +209,15 @@ export default function Homepage() {
               </div>
               <div className="feature-copy">
                 <h3>
-                  Work out when
-                  <br />
-                  you can buy it.
+                  Headphones. $120.
                 </h3>
+                <p>$40 is already saved. $80 is left.</p>
                 <p>
-                  Choose something you want, enter its price, and see how long
-                  it could take to save for it.
-                </p>
-                <p>
-                  Change your weekly savings to compare timelines. The full
-                  calculator also shows an estimated goal date.
+                  Tap $5, $10, or $20 a week. The full game runs five weeks of
+                  this, and pizza or bus fare can take some of the cash.
                 </p>
                 <Link href="/games/savings" className="learning-text-link">
-                  Try the savings calculator <ArrowRight size={17} />
+                  Play the five weeks <ArrowRight size={17} />
                 </Link>
               </div>
             </div>
@@ -238,31 +230,29 @@ export default function Homepage() {
               </div>
               <div className="feature-copy">
                 <h3>
-                  Read the news.
-                  <br />
-                  Think it through.
+                  Loop Bikes beat the forecast.
                 </h3>
                 <p>
-                  A company sells more than expected. Does that give investors a
-                  reason to be interested?
+                  Investors expected an ordinary sales report. Orders came in
+                  higher, and costs stayed flat.
                 </p>
                 <p>
-                  Make a choice and read the explanation. In the full game, some
-                  headlines have good and bad news at the same time.
+                  Put that piece on buyers or sellers. The longer game has
+                  three made-up companies, and Sunbeam's snack sells well while
+                  the ingredients get more expensive.
                 </p>
                 <Link href="/games/stocks" className="learning-text-link">
-                  Play the three-round game <ArrowRight size={17} />
+                  Sort the headlines <ArrowRight size={17} />
                 </Link>
               </div>
             </div>
             <div className="market-note">
               <span aria-hidden="true">?</span>
               <div>
-                <h3>A headline isn’t a prediction.</h3>
+                <h3>Same headline, two reads.</h3>
                 <p>
-                  Investors can interpret the same news differently. Our game
-                  explains possible reactions, rather than promising where a
-                  stock’s price will go.
+                  The game shows how buyers and sellers might react. It will
+                  not tell you the next price.
                 </p>
               </div>
             </div>
@@ -274,14 +264,15 @@ export default function Homepage() {
         <div className="learning-shell">
           <div>
             <h2>
-              Financial education
+              Mr. Ferla started
               <br />
-              with a purpose.
+              this as a nonprofit.
             </h2>
             <p>
-              CoinnectHub is a nonprofit helping young people learn about
-              finance and economics. Try the activities on your own, use them to
-              start a conversation at home, or bring a money question to class.
+              He moved from Brazil to the United States and noticed some
+              students already talked about saving at home, while others never
+              had. You can play the games alone. A teacher can ask about a
+              middle school workshop on the next page.
             </p>
             <div className="community-links">
               <Link href="/about" className="learning-button">
@@ -293,7 +284,7 @@ export default function Homepage() {
             </div>
           </div>
           <div className="community-note">
-            <p>Start with a question.</p>
+            <p>Two links.</p>
             <Link href="/games/savings">
               How long until I can afford it?
               <ArrowRight size={19} />

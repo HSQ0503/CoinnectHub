@@ -15,15 +15,15 @@ type Interest = "volunteer" | "school";
 const interests = {
   volunteer: {
     title: "Volunteering",
-    description: "Share your time, ideas, or experience.",
+    description: "A class visit, design, tutoring, or something else.",
     opening:
-      "I’m interested in volunteering with CoinnectHub. I’d like to learn more about ways to support financial education for young people.",
+      "I want to volunteer with CoinnectHub. Tell me what help you actually need.",
   },
   school: {
     title: "Schools & partnerships",
-    description: "Explore a connection with your community.",
+    description: "A grade, a class, a workshop.",
     opening:
-      "I’m interested in a school or community partnership with CoinnectHub. I’d like to discuss how we could support financial learning together.",
+      "I work with a school or community group and I want to talk about a CoinnectHub workshop.",
   },
 };
 
@@ -80,7 +80,7 @@ export function InvolvementForm() {
         }}
       >
         <fieldset>
-          <legend className="mb-4 font-bold">I’m interested in</legend>
+          <legend className="mb-4 font-bold">I'm interested in</legend>
           <div className="grid gap-3 sm:grid-cols-2">
             {(["volunteer", "school"] as const).map((option) => {
               const Icon = option === "volunteer" ? Users : School;
@@ -122,8 +122,8 @@ export function InvolvementForm() {
           id="inquiry-hint"
           className="mb-3 text-sm leading-relaxed text-navy/75"
         >
-          A little about your ideas is enough. Please leave out personal details
-          about students.
+          A few sentences is enough. Leave out student names and other private
+          info.
         </p>
         <textarea
           id="inquiry-message"
@@ -137,7 +137,7 @@ export function InvolvementForm() {
             setPreview(null);
             setDownloaded(false);
           }}
-          placeholder="I’d love to help with…"
+          placeholder="I can help with..."
           className="w-full resize-y rounded-xl border border-navy/30 bg-white p-4 text-base leading-relaxed text-navy placeholder:text-navy/50 focus:border-navy focus:outline-2 focus:outline-offset-2 focus:outline-navy"
         />
         <p id="inquiry-count" className="mt-2 text-right text-xs text-navy/65">
@@ -150,8 +150,7 @@ export function InvolvementForm() {
           Preview inquiry <ArrowRight size={18} aria-hidden="true" />
         </button>
         <p className="mt-3 text-center text-xs leading-relaxed text-navy/70">
-          Your draft stays in this browser until you download it. Nothing is
-          sent or saved online.
+          This stays in your browser. We don't receive it.
         </p>
       </form>
 
@@ -178,8 +177,7 @@ export function InvolvementForm() {
               className="mt-4 flex items-start gap-2 text-sm leading-relaxed text-navy"
             >
               <Check size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
-              Download started. Keep your note to send when contact details are
-              available.
+              Download started. Send the file when we post an email.
             </p>
           )}
         </section>

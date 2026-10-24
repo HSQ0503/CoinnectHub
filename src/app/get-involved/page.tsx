@@ -5,7 +5,7 @@ import { InvolvementForm } from "@/components/involvement-form";
 export const metadata: Metadata = {
   title: "Get involved with CoinnectHub",
   description:
-    "Explore volunteering and school or community partnerships with CoinnectHub.",
+    "Volunteer or ask about a middle school workshop. The form downloads a note because CoinnectHub doesn't have a public email yet.",
 };
 
 export default function GetInvolvedPage() {
@@ -15,13 +15,14 @@ export default function GetInvolvedPage() {
         <div className="container-shell">
           <p className="eyebrow mb-6 text-white">Contact & get involved</p>
           <h1 className="max-w-4xl text-[clamp(3rem,7vw,6rem)] leading-[1.04] font-extrabold tracking-[-0.055em]">
-            A little of your time.
+            Volunteers and schools.
             <br />
-            <span className="text-yellow">A lot to pass on.</span>
+            <span className="text-yellow">Email isn't live yet.</span>
           </h1>
           <p className="mt-7 max-w-xl text-lg leading-relaxed md:text-xl">
-            Help make financial learning more approachable. We’d love to hear
-            from adults, educators, and organizations who share that purpose.
+            Write the note anyway. You'll download a text file and send it once
+            we post a contact address. Instagram is @coinnect.hub if you want
+            the short posts first.
           </p>
         </div>
       </section>
@@ -29,7 +30,7 @@ export default function GetInvolvedPage() {
       <section className="container-shell grid items-start gap-12 py-16 md:py-24 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
         <div>
           <h2 className="mb-8 max-w-md text-3xl leading-tight font-extrabold tracking-tight md:text-4xl">
-            Good things start with a conversation.
+            Two kinds of notes.
           </h2>
           <div className="space-y-8">
             <div className="flex items-start gap-4">
@@ -41,8 +42,8 @@ export default function GetInvolvedPage() {
                   Interested in volunteering?
                 </h3>
                 <p className="leading-relaxed text-navy/75">
-                  Tell us what you enjoy doing and how you’d like to contribute
-                  to financial education.
+                  Say what you'd actually do. A class visit, design, tutoring,
+                  something else.
                 </p>
               </div>
             </div>
@@ -55,8 +56,8 @@ export default function GetInvolvedPage() {
                   Represent a school or community?
                 </h3>
                 <p className="leading-relaxed text-navy/75">
-                  Share the needs of your learners and your ideas for bringing
-                  financial learning to them.
+                  Tell us the grade and where students get stuck. Saving is the
+                  one we hear most.
                 </p>
               </div>
             </div>
@@ -65,11 +66,11 @@ export default function GetInvolvedPage() {
           <div className="mt-10 border-t border-navy/20 pt-8">
             <div className="flex items-center gap-3">
               <Mail size={20} strokeWidth={1.6} aria-hidden="true" />
-              <h3 className="font-extrabold">Contact details coming soon.</h3>
+              <h3 className="font-extrabold">No public email yet.</h3>
             </div>
             <p className="mt-3 leading-relaxed text-navy/75">
-              We’re getting this space ready. You can prepare and download an
-              inquiry now to send once our contact information is available.
+              Download the note and keep it. We'll add an address before this
+              page can send anything on its own.
             </p>
             <a
               href="https://www.instagram.com/coinnect.hub/"

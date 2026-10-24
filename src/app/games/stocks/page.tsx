@@ -6,7 +6,7 @@ import StockGame from "@/components/stock-game";
 export const metadata: Metadata = {
   title: "What Moves a Stock?",
   description:
-    "Three fictional headlines. Three decisions. Discover why investors react to company news with a quick financial literacy game from CoinnectHub.",
+    "Sort lines from three made-up headlines, Loop Bikes, Pixel Play, and Sunbeam Snacks, onto a buyers and sellers scale.",
 };
 
 export default function StocksPage() {
@@ -20,13 +20,14 @@ export default function StocksPage() {
         All games & tools
       </Link>
       <div className="mb-10 max-w-3xl sm:mb-12">
-        <p className="eyebrow">Read the signals / 3 rounds / About 1 minute</p>
+        <p className="eyebrow">Read the signals / 3 stories</p>
         <h1 className="page-heading mt-4">
           What moves <span className="text-blue">a stock?</span>
         </h1>
         <p className="body-copy mt-5 max-w-2xl">
-          News breaks. Investors react. Read each headline and decide what it
-          might mean, then look a little closer.
+          Each card shows what investors expected, then what the company
+          reported. You drop the lines on sellers, buyers, or not sure. All
+          three companies are fictional.
         </p>
       </div>
       <StockGame />

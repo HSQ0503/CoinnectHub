@@ -10,8 +10,8 @@ export default function SiteFooter() {
           <div>
             <Brand light />
             <p className="mt-5 max-w-[290px] text-sm leading-7 text-white/70">
-              Helping the next generation understand money, one decision at a
-              time.
+              Free money games for ages 13 to 18. Workshops in middle
+              schools.
             </p>
           </div>
           <div>
@@ -43,13 +43,13 @@ export default function SiteFooter() {
               <Instagram size={18} /> @coinnect.hub <ArrowUpRight size={15} />
             </a>
             <p className="mt-3 max-w-60 text-xs leading-6 text-white/60">
-              Small lessons in finance and economics, beyond the website.
+              Short posts, separate from the games on this site.
             </p>
           </div>
         </div>
         <div className="flex flex-col justify-between gap-3 border-t border-white/20 pt-6 text-xs leading-6 text-white/60 sm:flex-row">
           <p>© 2026 CoinnectHub</p>
-          <p>Made for learning. Educational content, not financial advice.</p>
+          <p>For learning. This is not financial advice.</p>
         </div>
       </div>
     </footer>
