@@ -27,13 +27,14 @@ export default function Homepage() {
               <span /> A youth financial literacy nonprofit
             </p>
             <h1>
-              Money skills.
+              Money skills
               <br />
-              For real life.
+              for real life
             </h1>
             <p className="hero-description">
-              Your first savings goal. Your first stock headline. A place to
-              figure it out, one choice at a time.
+              Whether it’s your first savings goal or your first investment,
+              CoinnectHub gives you a place to try real money decisions and see
+              how they play out.
             </p>
             <div className="hero-actions">
               <Link href="/games" className="button-primary">
@@ -44,8 +45,8 @@ export default function Homepage() {
               </Link>
             </div>
             <p className="hero-reassurance">
-              <Check size={16} aria-hidden="true" /> Free to play. No account
-              needed.
+              <Check size={16} aria-hidden="true" /> Free to play, and no
+              account needed
             </p>
           </div>
           <HeroFinanceLesson />
@@ -55,10 +56,10 @@ export default function Homepage() {
       <div className="learning-strip">
         <div className="container-shell">
           <span>
-            <Sparkles size={18} aria-hidden="true" /> Made for curious minds,
-            ages 13–18
+            <Sparkles size={18} aria-hidden="true" /> Made for students ages
+            13 to 18
           </span>
-          <span>Every choice is a chance to learn.</span>
+          <span>No real money, so every mistake is a free lesson</span>
         </div>
       </div>
 
@@ -70,14 +71,14 @@ export default function Homepage() {
           <div>
             <p className="eyebrow">Learn by doing</p>
             <h2 id="games-heading" className="section-title">
-              Start with
+              Learn by making
               <br />
-              an everyday choice.
+              your own choices
             </h2>
           </div>
           <p className="section-description">
-            Start with something familiar. Save for what you want, or find the
-            story behind a stock headline.
+            Plan a real savings goal with our calculator, or walk around Market
+            Street and decide where ten years of your money should go.
           </p>
         </div>
         <GameCards />
@@ -90,11 +91,11 @@ export default function Homepage() {
             <h2 className="section-title">
               Try it
               <br />
-              for yourself.
+              for yourself
             </h2>
             <p className="body-copy">
-              See how a different choice changes the picture. Try splitting a
-              budget or reading your first market headline.
+              Split a budget between saving and spending, or decide how a news
+              story might change what people will pay for a company’s stock.
             </p>
             <div
               className="learning-topic-toggle"
@@ -158,22 +159,19 @@ export default function Homepage() {
               <HeartHandshake size={28} strokeWidth={1.5} aria-hidden="true" />
             </span>
             <h2 className="section-title">
-              Money is part of life.
-              <br />
-              Learning about it
-              <br />
-              should be, too.
+              Money is part of everyday life, so learning about it should be
+              too
             </h2>
           </div>
           <div className="mission-copy">
             <p>
-              Some young people grow up talking about money at home. Others have
-              to work it out on their own.
+              Some young people grow up talking about money at home, while
+              others have to work it out on their own.
             </p>
             <p>
-              That gap is why Mr. Ferla started CoinnectHub. Through free games,
+              That gap is why João Ferla started CoinnectHub. Through free games,
               short explanations, and middle school workshops, we make room for
-              the questions students want to ask.
+              the questions students actually want to ask.
             </p>
             <Link href="/about" className="text-link">
               The story behind CoinnectHub{" "}

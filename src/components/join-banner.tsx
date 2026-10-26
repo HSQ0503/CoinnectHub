@@ -10,9 +10,12 @@ export default function JoinBanner() {
           <h2>
             Bring money conversations
             <br />
-            into the classroom.
+            into your classroom
           </h2>
-          <p>Help the next generation feel more at home with money.</p>
+          <p>
+            Invite us to your school or volunteer to help students feel more
+            comfortable with money.
+          </p>
         </div>
         <Link href="/get-involved" className="button-primary">
           Get involved <ArrowRight size={18} aria-hidden="true" />

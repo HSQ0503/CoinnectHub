@@ -12,15 +12,15 @@ export default function GameCards() {
         </div>
         <div className="game-card-copy">
           <span className="game-duration">
-            <Clock3 size={14} aria-hidden="true" /> Five virtual weeks
+            <Clock3 size={14} aria-hidden="true" /> A tool you can keep using
           </span>
-          <h3>How long to buy it?</h3>
+          <h3>Savings planner</h3>
           <p>
-            A pair of headphones. A concert ticket. Make a few choices and see
-            how your savings add up.
+            Find out when you can afford what you want, or how much to save each
+            week to get it by a certain date, with interest included.
           </p>
           <div className="game-card-action">
-            Play the savings game{" "}
+            Plan a goal{" "}
             <span>
               <ArrowUpRight size={21} aria-hidden="true" />
             </span>
@@ -29,20 +29,20 @@ export default function GameCards() {
       </Link>
       <Link href="/games/stocks" className="game-card">
         <div className="game-card-art stocks-art">
-          <span className="game-subject">Stocks & decisions</span>
+          <span className="game-subject">Investing</span>
           <StockIllustration />
         </div>
         <div className="game-card-copy">
           <span className="game-duration">
-            <Clock3 size={14} aria-hidden="true" /> Three stories to explore
+            <Clock3 size={14} aria-hidden="true" /> About 10 minutes
           </span>
-          <h3>What moves a stock?</h3>
+          <h3>Market Street</h3>
           <p>
-            More sales. Higher costs. A delayed launch. Discover why one
-            headline can tell more than one story.
+            Explore a 3D town, collect your paychecks, and invest them across
+            ten years of booms, crashes, and surprise bills.
           </p>
           <div className="game-card-action">
-            Play the headline game{" "}
+            Play Market Street{" "}
             <span>
               <ArrowUpRight size={21} aria-hidden="true" />
             </span>

@@ -15,13 +15,13 @@ type Interest = "volunteer" | "school";
 const interests = {
   volunteer: {
     title: "Volunteering",
-    description: "A class visit, design, tutoring, or something else.",
+    description: "Help with class visits, design, tutoring, or something else",
     opening:
       "I want to volunteer with CoinnectHub. I would love to hear about opportunities to help.",
   },
   school: {
     title: "Schools & partnerships",
-    description: "A grade, a class, a workshop.",
+    description: "Bring a workshop to your class or grade",
     opening:
       "I work with a school or community group and I want to talk about a CoinnectHub workshop.",
   },
@@ -67,8 +67,8 @@ export function InvolvementForm() {
             Prepare an inquiry
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-navy/75">
-            Choose an option and write a few lines. You can preview your note
-            and download a copy to keep.
+            Choose an option and write a few lines, then preview your note and
+            download a copy to keep.
           </p>
         </div>
       </div>
@@ -122,8 +122,8 @@ export function InvolvementForm() {
           id="inquiry-hint"
           className="mb-3 text-sm leading-relaxed text-navy/75"
         >
-          A few sentences is enough. Leave out student names and other private
-          info.
+          A few sentences is enough, and please leave out student names and
+          other private details.
         </p>
         <textarea
           id="inquiry-message"
@@ -150,7 +150,7 @@ export function InvolvementForm() {
           Preview inquiry <ArrowRight size={18} aria-hidden="true" />
         </button>
         <p className="mt-3 text-center text-xs leading-relaxed text-navy/70">
-          This stays in your browser. We don’t receive it.
+          Your note stays in your browser and isn’t sent to us.
         </p>
       </form>
 
@@ -177,8 +177,8 @@ export function InvolvementForm() {
               className="mt-4 flex items-start gap-2 text-sm leading-relaxed text-navy"
             >
               <Check size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
-              Download started. Keep your note until a contact address is
-              available.
+              Your download has started, so keep the note until a contact
+              address is available.
             </p>
           )}
         </section>

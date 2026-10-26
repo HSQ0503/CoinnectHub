@@ -6,7 +6,7 @@ import JoinBanner from "@/components/join-banner";
 export const metadata: Metadata = {
   title: "Games & tools",
   description:
-    "Practice saving and explore stock headlines with two free interactive games for teens. No account needed.",
+    "Plan a savings goal and play Market Street, a 3D investing game for teens. Free, with no account needed.",
 };
 
 export default function GamesPage() {
@@ -16,17 +16,17 @@ export default function GamesPage() {
         <div className="container-shell">
           <p className="eyebrow">Games & tools</p>
           <h1 className="page-heading">
-            Make a choice.
+            Practice money decisions
             <br />
-            See what happens.
+            before they’re real
           </h1>
           <p className="body-copy">
-            Build a savings plan or unpack a stock headline. Two short games to
-            help you get comfortable with money.
+            Use the savings planner to map out a real goal, or play Market
+            Street to see what ten years of investing choices can do.
           </p>
           <p className="hero-reassurance">
-            <Check size={16} aria-hidden="true" /> Free to play. No account. No
-            real money.
+            <Check size={16} aria-hidden="true" /> Free to use, with no account
+            and no real money
           </p>
         </div>
       </section>
@@ -38,8 +38,8 @@ export default function GamesPage() {
         <p className="games-note">
           <Lightbulb size={21} strokeWidth={1.6} aria-hidden="true" />
           <span>
-            Take your time with each choice. You can change your answer before
-            you lock a week or reveal a headline’s explanation.
+            Market Street works on phones, but it’s best on a laptop or a
+            classroom screen, where you can switch to full screen.
           </span>
         </p>
       </section>

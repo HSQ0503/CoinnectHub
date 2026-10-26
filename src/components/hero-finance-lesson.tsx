@@ -12,7 +12,7 @@ export default function HeroFinanceLesson() {
     <div className="goal-stage">
       <div className="goal-stage-ring" aria-hidden="true" />
       <div className="goal-stage-caption">
-        <span /> A little today. A little closer.
+        <span /> Small amounts add up over time
       </div>
       <div
         className="hero-goal-card"
@@ -78,9 +78,9 @@ export default function HeroFinanceLesson() {
       <div className="hero-penny">
         <CoinMascot />
         <span>
-          Meet Penny.
+          Meet Penny,
           <br />
-          Your learning buddy.
+          your learning buddy
         </span>
       </div>
     </div>

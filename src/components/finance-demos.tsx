@@ -6,7 +6,7 @@ export function BudgetDemo() {
   const [saved, setSaved] = useState(20);
   return (
     <div className="budget-demo demo-surface">
-      <p className="demo-kicker">You’ve got $50. Split it.</p>
+      <p className="demo-kicker">You have $50 to split between saving and spending</p>
       <div className="budget-coins" aria-hidden="true">
         {Array.from({ length: 10 }, (_, i) => (
           <span className={i < saved / 5 ? "is-saving" : "is-spending"} key={i}>
@@ -51,9 +51,9 @@ export function NewsDemo() {
       <div className="news-demo-story">
         <span>Loop Bikes</span>
         <h4>
-          More orders.
+          Orders jump while
           <br />
-          Same costs.
+          costs hold steady
         </h4>
         <p>Investors expected an ordinary report.</p>
       </div>
@@ -78,10 +78,10 @@ export function NewsDemo() {
       </div>
       <p className="news-demo-feedback" aria-live="polite">
         {selected === "buyers"
-          ? "Buyers. People expected an ordinary report, and orders beat that."
+          ? "Buyers is right, because people expected an ordinary report and the orders beat it."
           : selected === "sellers"
-            ? "Check the forecast. Orders beat it, and costs stayed flat. That piece sits with buyers."
-            : "Pick a side."}
+            ? "Look at the forecast again. Orders beat it while costs stayed flat, which is good news for buyers."
+            : "Choose a side to see the answer"}
       </p>
     </div>
   );

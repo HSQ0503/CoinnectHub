@@ -4,6 +4,7 @@ import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
 import "./globals.css";
 import "./homepage.css";
+import "./games.css";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
     template: "%s | CoinnectHub",
   },
   description:
-    "Free games for ages 13 to 18: a five-week savings run and a sort of three made-up stock headlines. No account.",
+    "Free money tools for ages 13 to 18, including a savings planner and Market Street, a 3D investing game. No account needed.",
   icons: { icon: "/coinnect-logo.png" },
   robots: { index: false, follow: false },
 };

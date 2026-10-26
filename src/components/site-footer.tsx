@@ -10,8 +10,8 @@ export default function SiteFooter() {
           <div className="footer-about">
             <Brand />
             <p>
-              Helping young people make sense of money, one conversation and one
-              choice at a time.
+              Helping young people make sense of money through games,
+              conversations, and classroom workshops.
             </p>
           </div>
           <div className="footer-links">
@@ -35,7 +35,7 @@ export default function SiteFooter() {
         </div>
         <div className="footer-bottom">
           <p>© 2026 CoinnectHub</p>
-          <p>For learning. This is not financial advice.</p>
+          <p>For learning only, not financial advice</p>
         </div>
       </div>
     </footer>
