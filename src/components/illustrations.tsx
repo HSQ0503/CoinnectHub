@@ -349,7 +349,7 @@ export function GoalIllustration() {
   );
 }
 
-export function StockIllustration() {
+export function QuizIllustration() {
   return (
     <svg
       viewBox="0 0 500 230"
@@ -358,62 +358,111 @@ export function StockIllustration() {
       className="h-full w-full"
       aria-hidden="true"
     >
-      <g transform="rotate(5 245 120)">
+      <g transform="rotate(-4 250 120)">
         <rect
-          x="105"
-          y="32"
-          width="285"
-          height="169"
-          rx="13"
+          x="92"
+          y="34"
+          width="316"
+          height="178"
+          rx="16"
           fill="white"
           stroke="#061B45"
           strokeWidth="2.5"
         />
-        <rect x="125" y="53" width="82" height="23" rx="5" fill="#FFCA20" />
+        <rect x="112" y="54" width="92" height="22" rx="11" fill="#FFCA20" />
         <text
-          x="138"
+          x="125"
           y="69"
           fill="#061B45"
           fontFamily="Arial, sans-serif"
           fontWeight="700"
           fontSize="11"
         >
-          The headline
+          Breaking news
         </text>
         <text
-          x="126"
-          y="109"
+          x="112"
+          y="108"
           fill="#061B45"
           fontFamily="Arial, sans-serif"
           fontWeight="800"
-          fontSize="22"
+          fontSize="20"
         >
-          Big news. What next?
+          Profits beat the forecast.
         </text>
         <path
-          d="M128 130H366M128 145H315"
+          d="M113 126H330M113 140H270"
           stroke="#061B45"
           strokeOpacity=".2"
           strokeWidth="5"
           strokeLinecap="round"
         />
+        <rect
+          x="112"
+          y="160"
+          width="132"
+          height="34"
+          rx="17"
+          fill="#0875CF"
+        />
         <path
-          d="M130 175L159 160L183 179L212 167L237 172L268 155L293 170L318 164L360 177"
-          stroke="#087BD8"
-          strokeWidth="3"
+          d="M128 183L138 172L146 179L158 167"
+          stroke="white"
+          strokeWidth="2.6"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
+        <path d="M152 167H158V173" stroke="white" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+        <text
+          x="168"
+          y="182"
+          fill="white"
+          fontFamily="Arial, sans-serif"
+          fontWeight="700"
+          fontSize="12"
+        >
+          Rise
+        </text>
+        <rect
+          x="254"
+          y="160"
+          width="132"
+          height="34"
+          rx="17"
+          fill="white"
+          stroke="#061B45"
+          strokeWidth="2"
+        />
+        <path
+          d="M270 170L280 181L288 174L300 186"
+          stroke="#061B45"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path d="M294 186H300V180" stroke="#061B45" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+        <text
+          x="310"
+          y="182"
+          fill="#061B45"
+          fontFamily="Arial, sans-serif"
+          fontWeight="700"
+          fontSize="12"
+        >
+          Fall
+        </text>
       </g>
-      <path
-        d="M87 105C87 91 99 80 113 80H148C162 80 173 91 173 105V130C173 144 162 155 148 155H126L108 172V155C96 152 87 143 87 130V105Z"
+      <circle
+        cx="418"
+        cy="62"
+        r="34"
         fill="#FFCA20"
         stroke="#061B45"
         strokeWidth="2.5"
       />
       <text
-        x="119"
-        y="134"
+        x="404"
+        y="78"
         fill="#061B45"
         fontFamily="Arial, sans-serif"
         fontWeight="800"

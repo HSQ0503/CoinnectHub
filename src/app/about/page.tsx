@@ -55,7 +55,7 @@ export default function AboutPage() {
             width={640}
             height={961}
             className="founder-portrait"
-            sizes="(max-width: 767px) 260px, 320px"
+            sizes="(max-width: 767px) 195px, 240px"
           />
           <h2>João Ferla</h2>
           <p>Founder of CoinnectHub</p>
@@ -88,11 +88,19 @@ export default function AboutPage() {
               <span className="sr-only"> (opens in a new tab)</span>
             </a>{" "}
             that break down financial topics in language teenagers can
-            understand. CoinnectHub later expanded to TikTok, but I wanted to
-            reach students beyond social media. Today, we bring financial
-            literacy into middle schools through workshops where students can
-            ask questions, explore everyday money decisions, and build a
-            foundation they can use as they grow up.
+            understand. CoinnectHub later expanded to{" "}
+            <a
+              href="https://www.tiktok.com/@coinnect.hub?_r=1&_t=ZS-9Auoe9gikoW"
+              target="_blank"
+              rel="noreferrer"
+            >
+              TikTok
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+            , but I wanted to reach students beyond social media. Today, we
+            bring financial literacy into middle schools through workshops
+            where students can ask questions, explore everyday money
+            decisions, and build a foundation they can use as they grow up.
           </p>
         </article>
       </section>

@@ -6,7 +6,7 @@ import JoinBanner from "@/components/join-banner";
 export const metadata: Metadata = {
   title: "Games & tools",
   description:
-    "Plan a savings goal and play Market Street, a 3D investing game for teens. Free, with no account needed.",
+    "Plan a savings goal, play Market Street, a 3D investing game for teens, or take a quick quiz on what moves a stock. Free, with no account needed.",
 };
 
 export default function GamesPage() {
@@ -21,8 +21,9 @@ export default function GamesPage() {
             before they’re real
           </h1>
           <p className="body-copy">
-            Use the savings planner to map out a real goal, or play Market
-            Street to see what ten years of investing choices can do.
+            Use the savings planner to map out a real goal, play Market Street
+            to see what ten years of investing choices can do, or take a quick
+            quiz on what moves a stock.
           </p>
           <p className="hero-reassurance">
             <Check size={16} aria-hidden="true" /> Free to use, with no account

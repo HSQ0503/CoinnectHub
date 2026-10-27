@@ -1,13 +1,22 @@
 "use client";
 
-import { useId, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   CalendarClock,
   Gauge,
+  Info,
   PiggyBank,
   Sparkles,
   Target,
   TrendingUp,
+  X,
 } from "lucide-react";
 import {
   FREQUENCIES,
@@ -35,8 +44,16 @@ const EXAMPLE_GOALS = [
 const RATE_PRESETS = [
   { label: "Cash at home", value: "0" },
   { label: "Regular bank", value: "0.5" },
-  { label: "High-yield savings", value: "4" },
+  { label: "High-yield savings", value: "4", term: "high-yield savings" },
 ];
+
+const DEFINITIONS = {
+  apy: "Annual percentage yield: how much your savings could earn in a year, including interest earned on earlier interest. This assumes the rate stays the same.",
+  highYield:
+    "A savings account that usually pays more interest than a regular savings account. Its rate can change over time.",
+  inflation:
+    "When prices rise overall, the same amount of money buys less. The price of your specific goal may rise faster, rise slower, or even fall.",
+};
 
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -54,10 +71,7 @@ const longDate = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   year: "numeric",
 });
-const shortDate = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  year: "numeric",
-});
+const monthName = new Intl.DateTimeFormat("en-US", { month: "short" });
 
 function formatMoney(value: number) {
   return Number.isInteger(Math.round(value * 100) / 100)
@@ -72,6 +86,11 @@ function goalPhrase(goal: string) {
   return /^(A|An|The|My)\s/.test(trimmed)
     ? trimmed[0].toLowerCase() + trimmed.slice(1)
     : trimmed;
+}
+
+// "Every week" becomes "every week" so it reads naturally inside a sentence or after an amount.
+function frequencyPhrase(frequency: Frequency) {
+  return FREQUENCIES.find((option) => option.id === frequency)!.label.toLowerCase();
 }
 
 function toDateKey(date: Date) {
@@ -269,19 +288,37 @@ export default function SavingsPlanner() {
         <fieldset className="planner-fieldset">
           <legend>Where you keep the money</legend>
           <div className="planner-segments planner-segments-3">
-            {RATE_PRESETS.map((preset) => (
-              <SegmentButton
-                key={preset.value}
-                active={Number(apy) === Number(preset.value)}
-                onClick={() => setApy(preset.value)}
-              >
-                <span>{preset.label}</span>
-                <small>{preset.value}% a year</small>
-              </SegmentButton>
-            ))}
+            {RATE_PRESETS.map((preset) =>
+              preset.term ? (
+                <div key={preset.value} className="planner-segment-with-tip">
+                  <SegmentButton
+                    active={Number(apy) === Number(preset.value)}
+                    onClick={() => setApy(preset.value)}
+                  >
+                    <span>{preset.label}</span>
+                    <small>{preset.value}% a year</small>
+                  </SegmentButton>
+                  <InfoTip
+                    term={preset.term}
+                    text={DEFINITIONS.highYield}
+                    align="end"
+                  />
+                </div>
+              ) : (
+                <SegmentButton
+                  key={preset.value}
+                  active={Number(apy) === Number(preset.value)}
+                  onClick={() => setApy(preset.value)}
+                >
+                  <span>{preset.label}</span>
+                  <small>{preset.value}% a year</small>
+                </SegmentButton>
+              ),
+            )}
           </div>
           <PercentField
             label="Interest rate (APY)"
+            tip={<InfoTip term="APY" text={DEFINITIONS.apy} />}
             hint="Banks list this as APY. You can type the exact rate here."
             value={apy}
             onChange={setApy}
@@ -291,15 +328,31 @@ export default function SavingsPlanner() {
 
         <details className="planner-more">
           <summary>More options</summary>
-          <PercentField
-            label="Price increase each year"
-            hint="Prices tend to rise a few percent a year, so a goal that’s a few years away may cost more by the time you get there."
-            value={priceGrowth}
-            onChange={setPriceGrowth}
-            error={
-              typeof parsed.priceGrowth === "string" ? parsed.priceGrowth : null
-            }
-          />
+          <div className="planner-inflation">
+            <h3>
+              Watch out for inflation!
+              <InfoTip term="inflation" text={DEFINITIONS.inflation} />
+            </h3>
+            <p>
+              Your goal could cost more by the time you’re ready to buy it.
+              Look up how prices for that item or experience have changed to
+              help estimate a yearly increase. Not everything follows the
+              overall inflation rate, and past changes don’t guarantee future
+              prices. Leave this at 0% if you want to assume the price stays
+              the same.
+            </p>
+            <PercentField
+              label="Estimated price increase per year (%)"
+              hint="This percentage is an assumption used for planning, not a prediction."
+              value={priceGrowth}
+              onChange={setPriceGrowth}
+              error={
+                typeof parsed.priceGrowth === "string"
+                  ? parsed.priceGrowth
+                  : null
+              }
+            />
+          </div>
           <MoneyField
             label="What you earn in a week (optional)"
             hint="We’ll show what share of your pay this plan takes."
@@ -380,10 +433,10 @@ function PaceResult({
 
   return (
     <>
-      <ResultHeadline
-        eyebrow="Your finish date"
-        title={`You’ll have enough for ${goalName} by ${longDate.format(plan.finishDate!)}.`}
-        detail={`That’s ${duration(input.start, plan.finishDate!)} and ${plan.deposits} deposits of ${formatMoney(input.deposit)}.`}
+      <ResultHero
+        eyebrow="You’ll have enough by"
+        value={longDate.format(plan.finishDate!)}
+        detail={`That’s ${duration(input.start, plan.finishDate!)} from now, with ${plan.deposits} deposits of ${formatMoney(input.deposit)} ${frequencyPhrase(input.frequency)} for ${goalName}.`}
       />
       <PlanStats
         plan={plan}
@@ -449,9 +502,7 @@ function DeadlineResult({
   onApy,
 }: DeadlineProps) {
   const result = planForDeadline(input, deadline);
-  const frequencyLabel = FREQUENCIES.find(
-    (option) => option.id === input.frequency,
-  )!.label.toLowerCase();
+  const frequencyLabel = frequencyPhrase(input.frequency);
 
   if (result.status === "already-there") {
     return (
@@ -481,10 +532,10 @@ function DeadlineResult({
 
   return (
     <>
-      <ResultHeadline
-        eyebrow="Your plan"
-        title={`Save ${formatMoney(result.deposit)} ${frequencyLabel} to get ${goalName} by ${longDate.format(deadline)}.`}
-        detail={`That’s ${result.deposits} deposits over ${duration(input.start, deadline)}.`}
+      <ResultHero
+        eyebrow="Save"
+        value={`${formatMoney(result.deposit)} ${frequencyLabel}`}
+        detail={`That gets you ${goalName} by ${longDate.format(deadline)}, with ${result.deposits} deposits over ${duration(input.start, deadline)}.`}
       />
       <PlanStats
         plan={result.plan}
@@ -525,6 +576,98 @@ function DeadlineResult({
       <Milestones plan={result.plan} />
       <Schedule plan={result.plan} />
     </>
+  );
+}
+
+function ResultHero({
+  eyebrow,
+  value,
+  detail,
+}: {
+  eyebrow: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <div className="planner-hero">
+      <p className="planner-hero-eyebrow">
+        <Target size={16} aria-hidden="true" /> {eyebrow}
+      </p>
+      <h2 className="planner-hero-value">{value}</h2>
+      <p className="planner-hero-detail">{detail}</p>
+    </div>
+  );
+}
+
+// A small "i" button that reveals a plain-language definition. It works with touch, mouse, and keyboard,
+// and closes on Escape, on an outside tap, or with its own close button.
+function InfoTip({
+  term,
+  text,
+  align = "start",
+}: {
+  term: string;
+  text: string;
+  align?: "start" | "end";
+}) {
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLSpanElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        button.current?.focus();
+      }
+    };
+    const onPointer = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [open]);
+
+  return (
+    <span className={`info-tip info-tip-${align}`} ref={root}>
+      <button
+        ref={button}
+        type="button"
+        className="info-tip-button"
+        aria-expanded={open}
+        aria-controls={id}
+        aria-label={`What does ${term} mean?`}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setOpen((current) => !current);
+        }}
+      >
+        <Info size={15} aria-hidden="true" />
+      </button>
+      {open && (
+        <span id={id} role="note" className="info-tip-panel">
+          <span className="info-tip-text">{text}</span>
+          <button
+            type="button"
+            className="info-tip-close"
+            aria-label="Close explanation"
+            onClick={() => {
+              setOpen(false);
+              button.current?.focus();
+            }}
+          >
+            <X size={15} aria-hidden="true" />
+          </button>
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -603,19 +746,67 @@ function sample<T>(items: T[], max: number) {
   );
 }
 
+// The chart runs from the first day of the current month to the last day of the plan's final month,
+// so every calendar month gets its own label.
+function monthsBetween(start: Date, end: Date) {
+  const months: Date[] = [];
+  const cursor = new Date(start.getFullYear(), start.getMonth(), 1, 12);
+  const last = new Date(end.getFullYear(), end.getMonth(), 1, 12);
+  while (cursor.getTime() <= last.getTime()) {
+    months.push(new Date(cursor.getTime()));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+  return months;
+}
+
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+function useWidth<T extends HTMLElement>(fallback: number) {
+  const ref = useRef<T>(null);
+  const [width, setWidth] = useState(fallback);
+  useIsomorphicLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const measure = () => setWidth(Math.round(node.clientWidth) || fallback);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [fallback]);
+  return { ref, width };
+}
+
 function SavingsChart({ plan, goalName }: { plan: Plan; goalName: string }) {
   const titleId = useId();
-  const width = 640;
-  const height = 260;
-  const pad = { top: 18, right: 18, bottom: 34, left: 58 };
+  const { ref: scroller, width: available } = useWidth<HTMLDivElement>(640);
   const points = sample(plan.points, 120);
-  const startTime = points[0].date.getTime();
-  const span = Math.max(1, points[points.length - 1].date.getTime() - startTime);
+  const first = points[0];
+  const last = points[points.length - 1];
+  const months = monthsBetween(first.date, last.date);
+  // Long plans get tighter columns so a decade of months stays scrollable rather than endless.
+  const monthWidth = months.length > 24 ? 46 : 64;
+  const pad = { top: 18, right: 18, bottom: 48, left: 58 };
+  const width = Math.max(
+    available,
+    pad.left + pad.right + months.length * monthWidth,
+  );
+  const height = 272;
+  const startTime = months[0].getTime();
+  const endOfLastMonth = new Date(
+    last.date.getFullYear(),
+    last.date.getMonth() + 1,
+    0,
+    12,
+  ).getTime();
+  const span = Math.max(1, endOfLastMonth - startTime);
   const top =
     Math.max(...points.map((point) => Math.max(point.balance, point.price))) *
     1.08;
-  const x = (date: Date) =>
-    pad.left + ((date.getTime() - startTime) / span) * (width - pad.left - pad.right);
+  const x = (date: Date | number) =>
+    pad.left +
+    (((typeof date === "number" ? date : date.getTime()) - startTime) / span) *
+      (width - pad.left - pad.right);
   const y = (value: number) =>
     pad.top + (1 - value / top) * (height - pad.top - pad.bottom);
   const line = (value: (point: (typeof points)[number]) => number) =>
@@ -633,70 +824,115 @@ function SavingsChart({ plan, goalName }: { plan: Plan; goalName: string }) {
   const finishPoint = finish
     ? plan.points.find((point) => point.date.getTime() === finish.getTime())
     : null;
+  const baseline = y(0);
+  const scrolls = width > available;
 
   return (
     <figure className="planner-chart">
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        role="img"
-        aria-labelledby={titleId}
+      <div
+        ref={scroller}
+        className={`planner-chart-scroll ${scrolls ? "is-scrollable" : ""}`}
+        tabIndex={scrolls ? 0 : undefined}
+        aria-label={scrolls ? "Savings chart. Scroll sideways to see every month." : undefined}
       >
-        <title id={titleId}>
-          {`Savings growth toward ${goalName}: from ${money.format(points[0].balance)} to ${money.format(points[points.length - 1].balance)}, with ${money.format(plan.interest)} from interest.`}
-        </title>
-        {ticks.map((tick) => (
-          <g key={tick}>
-            <line
-              x1={pad.left}
-              x2={width - pad.right}
-              y1={y(tick)}
-              y2={y(tick)}
-              className="chart-grid"
-            />
-            <text x={pad.left - 10} y={y(tick) + 4} className="chart-label" textAnchor="end">
-              {money.format(tick)}
-            </text>
-          </g>
-        ))}
-        <polygon
-          points={area((point) => point.deposited, () => 0)}
-          className="chart-deposits"
-        />
-        <polygon
-          points={area(
-            (point) => point.balance,
-            (point) => point.deposited,
-          )}
-          className="chart-interest"
-        />
-        <polyline
-          points={line((point) => point.balance)}
-          className="chart-balance"
-        />
-        <polyline
-          points={line((point) => point.price)}
-          className="chart-goal"
-        />
-        {finishPoint && (
-          <circle
-            cx={x(finishPoint.date)}
-            cy={y(finishPoint.balance)}
-            r="6"
-            className="chart-finish"
-          />
-        )}
-        <text x={pad.left} y={height - 10} className="chart-label">
-          {shortDate.format(points[0].date)}
-        </text>
-        <text
-          x={width - pad.right}
-          y={height - 10}
-          className="chart-label"
-          textAnchor="end"
+        <svg
+          width={width}
+          height={height}
+          viewBox={`0 0 ${width} ${height}`}
+          role="img"
+          aria-labelledby={titleId}
         >
-          {shortDate.format(points[points.length - 1].date)}
-        </text>
-      </svg>
+          <title id={titleId}>
+            {`Savings growth toward ${goalName} from ${monthName.format(months[0])} ${months[0].getFullYear()} to ${monthName.format(months[months.length - 1])} ${months[months.length - 1].getFullYear()}: from ${money.format(first.balance)} to ${money.format(last.balance)}, with ${money.format(plan.interest)} from interest.`}
+          </title>
+          {ticks.map((tick) => (
+            <g key={tick}>
+              <line
+                x1={pad.left}
+                x2={width - pad.right}
+                y1={y(tick)}
+                y2={y(tick)}
+                className="chart-grid"
+              />
+              <text
+                x={pad.left - 10}
+                y={y(tick) + 4}
+                className="chart-label"
+                textAnchor="end"
+              >
+                {money.format(tick)}
+              </text>
+            </g>
+          ))}
+          {months.map((month, index) => {
+            const next =
+              index + 1 < months.length
+                ? months[index + 1].getTime()
+                : endOfLastMonth;
+            const left = x(month);
+            const center = (left + x(next)) / 2;
+            const newYear = index === 0 || month.getMonth() === 0;
+            return (
+              <g key={month.getTime()}>
+                {index > 0 && (
+                  <line
+                    x1={left}
+                    x2={left}
+                    y1={pad.top}
+                    y2={baseline + 6}
+                    className={newYear ? "chart-month-line is-year" : "chart-month-line"}
+                  />
+                )}
+                <text
+                  x={center}
+                  y={baseline + 22}
+                  className={newYear ? "chart-label chart-month is-year" : "chart-label chart-month"}
+                  textAnchor="middle"
+                >
+                  {monthName.format(month)}
+                </text>
+                {newYear && (
+                  <text
+                    x={center}
+                    y={baseline + 38}
+                    className="chart-label chart-year"
+                    textAnchor="middle"
+                  >
+                    {month.getFullYear()}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+          <polygon
+            points={area((point) => point.deposited, () => 0)}
+            className="chart-deposits"
+          />
+          <polygon
+            points={area(
+              (point) => point.balance,
+              (point) => point.deposited,
+            )}
+            className="chart-interest"
+          />
+          <polyline
+            points={line((point) => point.balance)}
+            className="chart-balance"
+          />
+          <polyline
+            points={line((point) => point.price)}
+            className="chart-goal"
+          />
+          {finishPoint && (
+            <circle
+              cx={x(finishPoint.date)}
+              cy={y(finishPoint.balance)}
+              r="6"
+              className="chart-finish"
+            />
+          )}
+        </svg>
+      </div>
       <figcaption>
         <span>
           <i className="key-deposits" /> Your deposits
@@ -709,6 +945,7 @@ function SavingsChart({ plan, goalName }: { plan: Plan; goalName: string }) {
         <span>
           <i className="key-goal" /> Goal price
         </span>
+        {scrolls && <span className="chart-scroll-hint">Scroll sideways to see every month</span>}
       </figcaption>
     </figure>
   );
@@ -811,6 +1048,7 @@ type FieldProps = {
   onChange: (value: string) => void;
   hint?: string;
   error?: string | null;
+  tip?: React.ReactNode;
 };
 
 function FieldShell({
@@ -818,6 +1056,7 @@ function FieldShell({
   label,
   hint,
   error,
+  tip,
   children,
 }: Omit<FieldProps, "value" | "onChange"> & {
   id: string;
@@ -825,7 +1064,10 @@ function FieldShell({
 }) {
   return (
     <div className={`planner-field ${error ? "has-error" : ""}`}>
-      <label htmlFor={id}>{label}</label>
+      <div className="planner-label-row">
+        <label htmlFor={id}>{label}</label>
+        {tip}
+      </div>
       {hint && <p id={`${id}-hint`}>{hint}</p>}
       {children}
       {error && (
@@ -886,10 +1128,17 @@ function MoneyField({ label, value, onChange, hint, error }: FieldProps) {
   );
 }
 
-function PercentField({ label, value, onChange, hint, error }: FieldProps) {
+function PercentField({
+  label,
+  value,
+  onChange,
+  hint,
+  error,
+  tip,
+}: FieldProps) {
   const id = useId();
   return (
-    <FieldShell id={id} label={label} hint={hint} error={error}>
+    <FieldShell id={id} label={label} hint={hint} error={error} tip={tip}>
       <div className="planner-affix planner-affix-end">
         <input
           id={id}

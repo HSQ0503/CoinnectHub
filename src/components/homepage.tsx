@@ -1,23 +1,10 @@
-"use client";
-
 import Link from "next/link";
-import { useState } from "react";
 import { ArrowRight, Check, HeartHandshake, Sparkles } from "lucide-react";
 import HeroFinanceLesson from "./hero-finance-lesson";
-import { BudgetDemo, NewsDemo } from "./finance-demos";
 import GameCards from "./game-cards";
 import JoinBanner from "./join-banner";
 
-type Topic = "saving" | "stocks";
-
 export default function Homepage() {
-  const [topic, setTopic] = useState<Topic>("saving");
-
-  function selectTopic(next: Topic, focus = false) {
-    setTopic(next);
-    if (focus) document.getElementById(`topic-${next}`)?.focus();
-  }
-
   return (
     <div className="coinnect-home">
       <section className="home-hero">
@@ -77,79 +64,12 @@ export default function Homepage() {
             </h2>
           </div>
           <p className="section-description">
-            Plan a real savings goal with our calculator, or walk around Market
-            Street and decide where ten years of your money should go.
+            Plan a real savings goal with our calculator, walk around Market
+            Street to decide where ten years of your money should go, or take
+            a two-minute quiz on what moves a stock.
           </p>
         </div>
         <GameCards />
-      </section>
-
-      <section className="practice-section">
-        <div className="container-shell practice-grid">
-          <div className="practice-copy">
-            <p className="eyebrow">A quick warm-up</p>
-            <h2 className="section-title">
-              Try it
-              <br />
-              for yourself
-            </h2>
-            <p className="body-copy">
-              Split a budget between saving and spending, or decide how a news
-              story might change what people will pay for a company’s stock.
-            </p>
-            <div
-              className="learning-topic-toggle"
-              role="tablist"
-              aria-label="Choose a learning topic"
-            >
-              {(["saving", "stocks"] as const).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  role="tab"
-                  id={`topic-${value}`}
-                  aria-selected={topic === value}
-                  aria-controls={`panel-${value}`}
-                  tabIndex={topic === value ? 0 : -1}
-                  onClick={() => selectTopic(value)}
-                  onKeyDown={(event) => {
-                    if (
-                      ["ArrowLeft", "ArrowRight", "Home", "End"].includes(
-                        event.key,
-                      )
-                    ) {
-                      event.preventDefault();
-                      selectTopic(
-                        event.key === "Home"
-                          ? "saving"
-                          : event.key === "End"
-                            ? "stocks"
-                            : topic === "saving"
-                              ? "stocks"
-                              : "saving",
-                        true,
-                      );
-                    }
-                  }}
-                >
-                  {value === "saving"
-                    ? "Saving & spending"
-                    : "Reading the market"}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div
-            className="practice-panel"
-            key={topic}
-            role="tabpanel"
-            id={`panel-${topic}`}
-            aria-labelledby={`topic-${topic}`}
-            tabIndex={0}
-          >
-            {topic === "saving" ? <BudgetDemo /> : <NewsDemo />}
-          </div>
-        </div>
       </section>
 
       <section className="mission-section">
