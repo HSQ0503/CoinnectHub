@@ -215,6 +215,48 @@ export default function MarketStreet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story, phase]);
 
+  // Keys are tracked on the whole window, because clicking a panel button and walking away removes that button,
+  // which drops focus to the page and would otherwise swallow the key release and leave Penny walking forever.
+  useEffect(() => {
+    if (!playing) return;
+    const engaged = () => {
+      const node = shell.current;
+      const active = document.activeElement;
+      if (!node || (active && active !== document.body && !node.contains(active))) return false;
+      const rect = node.getBoundingClientRect();
+      return rect.bottom > 0 && rect.top < window.innerHeight;
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (story || event.metaKey || event.ctrlKey || event.altKey || !engaged()) return;
+      if (MOVE_KEYS.includes(event.code)) {
+        event.preventDefault();
+        world.current?.setKey(event.code, true);
+      } else if (event.key === "Escape") {
+        setPanel(null);
+        setPlacesOpen(false);
+      } else if ((event.key === "e" || event.key === "Enter") && zone && !panel) {
+        const active = document.activeElement;
+        if (active === shell.current || active === document.body) setPanel(zone);
+      }
+    };
+    // macOS never sends key releases while Command is held, so letting go of Command clears every key.
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "Meta") world.current?.releaseKeys();
+      else world.current?.setKey(event.code, false);
+    };
+    const release = () => world.current?.releaseKeys();
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", release);
+    document.addEventListener("visibilitychange", release);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", release);
+      document.removeEventListener("visibilitychange", release);
+    };
+  }, [playing, story, zone, panel]);
+
   useEffect(() => {
     const update = () => setFullscreen(document.fullscreenElement === shell.current);
     document.addEventListener("fullscreenchange", update);
@@ -396,22 +438,6 @@ export default function MarketStreet() {
       className={`market-shell ${fullscreen ? "is-fullscreen" : ""} ${playing ? "is-playing" : ""} ${story ? "has-story" : ""}`}
       tabIndex={-1}
       aria-label="Market Street game"
-      onKeyDown={(event) => {
-        if (!playing || story) return;
-        if (MOVE_KEYS.includes(event.code)) {
-          event.preventDefault();
-          world.current?.setKey(event.code, true);
-        } else if (event.key === "Escape") {
-          setPanel(null);
-          setPlacesOpen(false);
-        } else if ((event.key === "e" || event.key === "Enter") && event.target === shell.current && zone && !panel) {
-          setPanel(zone);
-        }
-      }}
-      onKeyUp={(event) => world.current?.setKey(event.code, false)}
-      onBlur={(event) => {
-        if (!shell.current?.contains(event.relatedTarget as Node | null)) world.current?.releaseKeys();
-      }}
     >
       <div ref={stage} className="market-stage" />
       <div ref={overlay} className="world-overlay" aria-hidden="true" />
