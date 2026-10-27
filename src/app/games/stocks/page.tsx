@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, MonitorPlay, RotateCcw, Vote } from "lucide-react";
+import { ArrowLeft, MessagesSquare, MonitorPlay, RotateCcw, Vote } from "lucide-react";
 import MarketStreet from "@/components/market-street/market-street";
 
 export const metadata: Metadata = {
   title: "Market Street",
   description:
-    "A free 3D investing game for teens. Walk around town, collect your paychecks, and decide where ten years of your money should go.",
+    "A free 3D investing game for middle and high schoolers. Pick a dream, walk around town, and decide where ten years of paychecks should go.",
 };
 
 const classroomTips = [
@@ -17,13 +17,18 @@ const classroomTips = [
   },
   {
     Icon: Vote,
-    title: "Let the class decide",
-    text: "Stop at each building and have students vote on where the money goes before you fast-forward, then read the newspaper together.",
+    title: "Let the class vote",
+    text: "Every decision card has lettered answers. Have students vote A, B, or C, then press 1, 2, or 3 to lock in the class’s choice.",
   },
   {
     Icon: RotateCcw,
     title: "Replay the same years",
     text: "At the end, replay the exact same market with a different plan so students can see that the choices changed the result, not luck.",
+  },
+  {
+    Icon: MessagesSquare,
+    title: "Talk it through",
+    text: "The final screen ends with three discussion questions about the crash, hype, and what students would change. They work well in pairs before sharing.",
   },
 ];
 
@@ -37,9 +42,10 @@ export default function StocksPage() {
         <p className="eyebrow">Investing</p>
         <h1 className="page-heading">Market Street</h1>
         <p className="body-copy">
-          You’re 15 with $1,000 and a part-time job. Walk around town, invest in
-          banks, bonds, companies, or a hype coin, and see what a decade of
-          crashes, booms, and surprise bills does to your money.
+          You’re 15 with $1,000 and a job at Burger Barn. Pick a dream, walk
+          around town, and decide where each paycheck goes as new places open
+          up. Along the way you’ll face a crash, a hype coin, hot tips, and
+          surprise bills.
         </p>
       </div>
       <div className="game-experience">

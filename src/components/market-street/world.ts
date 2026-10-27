@@ -1,8 +1,14 @@
 import * as THREE from "three";
-import { ASSETS, type AssetId, type Economy } from "@/lib/market-data";
+import { ASSETS, type AssetId, type Economy, type HatId } from "@/lib/market-data";
 import { createRng } from "@/lib/market-game";
 
-export type ZoneId = AssetId | "clock";
+export type ZoneId = AssetId | "shop" | "clock";
+
+export type YearEndScene = {
+  economy: Economy;
+  stacks: Record<AssetId, number>;
+  tags: Partial<Record<AssetId, { text: string; up: boolean; owned: boolean }>>;
+};
 
 export type World = {
   spawnCoins: (values: number[], seed: number) => void;
@@ -11,8 +17,16 @@ export type World = {
   releaseKeys: () => void;
   setControls: (enabled: boolean) => void;
   setPanelOpen: (open: boolean) => void;
-  setLabelDetails: (details: Partial<Record<ZoneId, string>>) => void;
-  playYearEnd: (returns: Record<AssetId, number>, economy: Economy) => Promise<void>;
+  setLabels: (details: Partial<Record<ZoneId, string>>) => void;
+  setLocked: (locked: Partial<Record<ZoneId, boolean>>) => void;
+  celebrate: (zones: ZoneId[]) => void;
+  focus: (zone: ZoneId | null) => void;
+  setGuide: (zone: ZoneId | null) => void;
+  setStacks: (amounts: Record<AssetId, number>, instant?: boolean) => void;
+  flyCoins: (zone: AssetId | "shop", direction: "in" | "out", amount: number) => void;
+  payday: () => void;
+  setHat: (hat: HatId | null) => void;
+  playYearEnd: (scene: YearEndScene) => Promise<void>;
   startYear: () => void;
   resetPlayer: () => void;
   dispose: () => void;
@@ -36,16 +50,18 @@ const SKY = "#bfe6ff";
 const NAVY = "#061b45";
 const GOLD = "#ffca20";
 const STONE = "#eee6d6";
+const SHOP_COLOR = "#1f9e8f";
+const JOB_COLOR = "#ef5b3b";
 
-const SLOTS: Record<ZoneId, number> = {
+const SLOTS: Record<ZoneId | "job", number> = {
   clock: 0,
   bank: 45,
-  bonds: 90,
-  index: 135,
-  snacks: 180,
-  bikes: 225,
-  pixel: 270,
-  rocket: 315,
+  index: 90,
+  snacks: 135,
+  job: 180,
+  pixel: 225,
+  rocket: 270,
+  shop: 315,
 };
 
 const KEY_DIRECTIONS: Record<string, [number, number]> = {
@@ -67,9 +83,19 @@ const MOODS: Record<Economy, { sky: string; sun: number; hemi: number; weather: 
   crash: { sky: "#6f8197", sun: 0.9, hemi: 1.15, weather: "rain" },
 };
 
+const STACK_COLUMNS = 12;
+const COINS_PER_COLUMN = 10;
+const STACK_CAPACITY = STACK_COLUMNS * COINS_PER_COLUMN;
+const STACK_UNIT = 100;
+
 function onRing(degrees: number, radius: number) {
   const angle = THREE.MathUtils.degToRad(degrees);
   return new THREE.Vector3(Math.sin(angle) * radius, 0, -Math.cos(angle) * radius);
+}
+
+function tangentOf(degrees: number) {
+  const angle = THREE.MathUtils.degToRad(degrees);
+  return new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
 }
 
 const materials = new Map<string, THREE.MeshStandardMaterial>();
@@ -120,6 +146,10 @@ function cylinder(
   return add(parent, new THREE.Mesh(geometry, paint(color, glow)), ...at);
 }
 
+function sphere(parent: THREE.Object3D, radius: number, color: string, at: [number, number, number], glow = 0) {
+  return add(parent, new THREE.Mesh(new THREE.SphereGeometry(radius, 14, 10), paint(color, glow)), ...at);
+}
+
 function pyramid(parent: THREE.Object3D, radius: number, height: number, color: string, y: number) {
   const geometry = new THREE.ConeGeometry(radius, height, 4);
   geometry.rotateY(Math.PI / 4);
@@ -151,23 +181,6 @@ function buildBank(color: string): Built {
   return { group, height: 6 };
 }
 
-function buildBonds(color: string, updaters: Updater[]): Built {
-  const group = new THREE.Group();
-  box(group, [6.2, 0.6, 4.8], color, [0, 0.3, 0]);
-  box(group, [6, 3.6, 4.6], "#eaf5f2", [0, 2.4, 0]);
-  box(group, [6.4, 0.35, 5], color, [0, 4.37, 0]);
-  windowRow(group, [-1.9, 1.9], 1.6, 2.33);
-  windowRow(group, [-1.9, 0, 1.9], 3.2, 2.33);
-  door(group, 2.33);
-  box(group, [1.9, 0.12, 0.9], color, [0, 2.35, 2.75]);
-  cylinder(group, 0.06, 2.4, "#cfd8e3", [2.6, 5.7, 1.6], { segments: 6 });
-  const flag = box(group, [1.1, 0.6, 0.04], color, [3.15, 6.55, 1.6]);
-  updaters.push((time) => {
-    flag.rotation.y = Math.sin(time * 3) * 0.25;
-  });
-  return { group, height: 7 };
-}
-
 function buildIndex(color: string, updaters: Updater[]): Built {
   const group = new THREE.Group();
   box(group, [7.6, 0.4, 5.6], "#e3dccd", [0, 0.2, 0]);
@@ -181,14 +194,15 @@ function buildIndex(color: string, updaters: Updater[]): Built {
   );
   add(group, dome, 0, 4.5, 0);
   cylinder(group, 0.08, 1, NAVY, [0, 7.1, 0], { segments: 6 });
-  // A ring of small flags in every building's color says "you own a bit of everything".
+  // A ring of small flags in every company's color says "you own a bit of everything".
   const flags = new THREE.Group();
-  ASSETS.forEach((asset, index) => {
-    const angle = (index / ASSETS.length) * Math.PI * 2;
+  const flagColors = [JOB_COLOR, "#f59e0b", "#8b5cf6", SHOP_COLOR, "#3d9be9", "#16a34a", "#e0457b"];
+  flagColors.forEach((flagColor, index) => {
+    const angle = (index / flagColors.length) * Math.PI * 2;
     const x = Math.cos(angle) * 3;
     const z = Math.sin(angle) * 2.05;
     cylinder(flags, 0.04, 1.1, "#d8dee8", [x, 5.05, z], { segments: 5 });
-    box(flags, [0.5, 0.32, 0.03], asset.color, [x + 0.26, 5.42, z]);
+    box(flags, [0.5, 0.32, 0.03], flagColor, [x + 0.26, 5.42, z]);
   });
   group.add(flags);
   updaters.push((time) => {
@@ -225,44 +239,6 @@ function buildSnacks(color: string, updaters: Updater[]): Built {
     sun.rotation.z += delta * 0.6;
   });
   return { group, height: 6.6 };
-}
-
-function buildBikes(color: string, updaters: Updater[]): Built {
-  const group = new THREE.Group();
-  box(group, [5.8, 0.5, 4.6], color, [0, 0.25, 0]);
-  box(group, [5.6, 3.2, 4.4], "#fde8e1", [0, 2.1, 0]);
-  box(group, [6, 0.35, 4.8], color, [0, 3.85, 0]);
-  box(group, [2.8, 1.6, 0.08], "#cfeaff", [1.1, 1.75, 2.21], 0.2);
-  door(group, 2.21, -1.6);
-  const bike = new THREE.Group();
-  const wheels = [-1.1, 1.1].map((x) => {
-    const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.11, 8, 24), paint(NAVY));
-    wheel.position.x = x;
-    bike.add(wheel);
-    return wheel;
-  });
-  const tube = (from: [number, number], to: [number, number], material = paint(color)) => {
-    const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(length, 0.14, 0.14), material);
-    mesh.position.set((from[0] + to[0]) / 2, (from[1] + to[1]) / 2, 0);
-    mesh.rotation.z = Math.atan2(to[1] - from[1], to[0] - from[0]);
-    bike.add(mesh);
-  };
-  tube([-1.1, 0], [-0.2, 0]);
-  tube([-0.2, 0], [-0.45, 0.9]);
-  tube([-1.1, 0], [-0.45, 0.9]);
-  tube([-0.45, 0.9], [0.75, 0.9]);
-  tube([-0.2, 0], [0.75, 0.9]);
-  tube([1.1, 0], [0.8, 1.25]);
-  tube([0.55, 1.3], [1.1, 1.3], paint(NAVY));
-  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.14, 0.3), paint(NAVY));
-  seat.position.set(-0.5, 1.08, 0);
-  bike.add(seat);
-  add(group, bike, 0, 4.9, 0);
-  updaters.push((_, delta) => {
-    for (const wheel of wheels) wheel.rotation.z -= delta * 2.5;
-  });
-  return { group, height: 6.4 };
 }
 
 function pixelScreen(updaters: Updater[]) {
@@ -398,6 +374,57 @@ function buildRocket(color: string, updaters: Updater[]): Built {
   return { group, height: 6.6 };
 }
 
+function buildShop(color: string, updaters: Updater[]): Built {
+  const group = new THREE.Group();
+  box(group, [6, 3.2, 4.4], "#e7faf6", [0, 1.6, 0]);
+  box(group, [6.3, 0.3, 4.7], color, [0, 3.35, 0]);
+  for (let index = 0; index < 6; index++) {
+    const stripe = box(group, [1, 0.14, 1.4], index % 2 ? "#ffffff" : "#e0457b", [-2.5 + index, 2.75, 2.75]);
+    stripe.rotation.x = 0.35;
+  }
+  cylinder(group, 0.95, 0.08, "#cfeaff", [-1.2, 1.5, 2.21], { segments: 24, faceForward: true, glow: 0.2 });
+  door(group, 2.21, 1.7);
+  const hat = new THREE.Group();
+  cylinder(hat, 1.5, 0.18, NAVY, [0, 0, 0], { segments: 28 });
+  cylinder(hat, 0.95, 2, NAVY, [0, 1.05, 0], { segments: 24 });
+  cylinder(hat, 0.97, 0.38, "#e0457b", [0, 0.3, 0], { segments: 24 });
+  add(group, hat, 0, 3.6, 0);
+  updaters.push((time) => {
+    hat.rotation.y = time * 0.5;
+    hat.rotation.z = Math.sin(time * 1.6) * 0.06;
+  });
+  return { group, height: 6.6 };
+}
+
+function buildJob(color: string, updaters: Updater[]): Built {
+  const group = new THREE.Group();
+  box(group, [6.6, 3, 4.6], "#fff1e0", [0, 1.5, 0]);
+  box(group, [6.9, 0.35, 4.9], color, [0, 3.15, 0]);
+  windowRow(group, [-2, 2], 1.7, 2.33);
+  door(group, 2.33);
+  box(group, [2.4, 0.5, 0.12], color, [0, 2.65, 2.36], 0.3);
+  const burger = new THREE.Group();
+  cylinder(burger, 1.25, 0.35, "#e8a45a", [0, 0, 0], { segments: 20 });
+  cylinder(burger, 1.35, 0.32, "#6b3e26", [0, 0.33, 0], { segments: 20 });
+  const cheese = box(burger, [2.3, 0.1, 2.3], GOLD, [0, 0.52, 0]);
+  cheese.rotation.y = Math.PI / 4;
+  cylinder(burger, 1.42, 0.12, "#4caf50", [0, 0.62, 0], { segments: 12 });
+  const bun = new THREE.Mesh(new THREE.SphereGeometry(1.3, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), paint("#e8a45a"));
+  bun.scale.y = 0.75;
+  add(burger, bun, 0, 0.68, 0);
+  for (let index = 0; index < 7; index++) {
+    const angle = index * 2.4;
+    const seed = box(burger, [0.18, 0.06, 0.1], "#fff8e7", [Math.cos(angle) * 0.75, 1.5 - (index % 3) * 0.12, Math.sin(angle) * 0.75]);
+    seed.rotation.y = angle;
+  }
+  add(group, burger, 0, 3.55, 0);
+  updaters.push((time) => {
+    burger.rotation.y = time * 0.4;
+    burger.position.y = 3.55 + Math.sin(time * 2) * 0.08;
+  });
+  return { group, height: 6 };
+}
+
 function buildClock(updaters: Updater[], spin: { speed: number }): Built {
   const group = new THREE.Group();
   box(group, [3.6, 0.6, 3.6], "#d8cfbd", [0, 0.3, 0]);
@@ -428,6 +455,23 @@ function buildClock(updaters: Updater[], spin: { speed: number }): Built {
   return { group, height: 11.6 };
 }
 
+function buildBarrier() {
+  const group = new THREE.Group();
+  for (const x of [-1.7, 1.7]) {
+    box(group, [0.22, 1.5, 0.22], "#475569", [x, 0.75, 0]);
+    box(group, [0.5, 0.14, 0.5], "#475569", [x, 0.07, 0]);
+  }
+  for (const [y, offset] of [
+    [1.25, 0],
+    [0.7, 1],
+  ] as const) {
+    for (let index = 0; index < 6; index++) {
+      box(group, [0.6, 0.32, 0.12], (index + offset) % 2 ? "#ffffff" : "#f97316", [-1.5 + index * 0.6, y, 0]);
+    }
+  }
+  return group;
+}
+
 function buildPenny() {
   const penny = new THREE.Group();
   const body = new THREE.Group();
@@ -449,6 +493,42 @@ function buildPenny() {
   shine.rotation.z = Math.PI / 2;
   add(body, shine, 0, 0, 0.15);
   return { penny, body };
+}
+
+function buildHat(id: HatId) {
+  const hat = new THREE.Group();
+  if (id === "party") {
+    const cone = add(hat, new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.75, 16), paint("#e0457b")), 0.08, 1.08, 0);
+    cone.rotation.z = -0.22;
+    for (const y of [0.92, 1.12]) {
+      const band = add(hat, new THREE.Mesh(new THREE.TorusGeometry(0.24 - (y - 0.92) * 0.5, 0.03, 6, 18), paint(GOLD)), 0.03 + (y - 0.92) * 0.3, y, 0);
+      band.rotation.set(Math.PI / 2, 0.22, 0);
+    }
+    sphere(hat, 0.11, GOLD, [0.25, 1.46, 0], 0.3);
+  } else if (id === "chef") {
+    cylinder(hat, 0.34, 0.32, "#ffffff", [0, 0.9, 0], { segments: 18 });
+    const puff = sphere(hat, 0.44, "#ffffff", [0, 1.18, 0]);
+    puff.scale.y = 0.62;
+  } else if (id === "shades") {
+    for (const x of [-0.21, 0.21]) box(hat, [0.32, 0.18, 0.05], "#111827", [x, 0.13, 0.27]);
+    box(hat, [0.16, 0.04, 0.04], "#111827", [0, 0.17, 0.27]);
+    box(hat, [0.05, 0.04, 0.3], "#111827", [-0.36, 0.17, 0.13]);
+    box(hat, [0.05, 0.04, 0.3], "#111827", [0.36, 0.17, 0.13]);
+  } else if (id === "headphones") {
+    add(hat, new THREE.Mesh(new THREE.TorusGeometry(0.82, 0.07, 8, 28, Math.PI), paint(NAVY)), 0, 0.02, 0);
+    for (const x of [-0.82, 0.82]) {
+      const cup = cylinder(hat, 0.22, 0.2, "#e0457b", [x, 0, 0], { segments: 16 });
+      cup.rotation.z = Math.PI / 2;
+    }
+  } else {
+    cylinder(hat, 0.38, 0.22, GOLD, [0, 0.86, 0], { segments: 20, glow: 0.25 });
+    for (let index = 0; index < 5; index++) {
+      const angle = (index / 5) * Math.PI * 2;
+      add(hat, new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.3, 6), paint(GOLD, 0.25)), Math.cos(angle) * 0.32, 1.1, Math.sin(angle) * 0.32);
+      sphere(hat, 0.05, index % 2 ? "#e0457b" : "#3d9be9", [Math.cos(angle) * 0.38, 0.86, Math.sin(angle) * 0.38], 0.4);
+    }
+  }
+  return hat;
 }
 
 function buildCoin(value: number, bonus: boolean) {
@@ -492,6 +572,9 @@ function label(text: string, detail: string, color: string) {
   element.append(dot, name, small);
   return element;
 }
+
+const GUIDE_ARROW =
+  '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 export async function createWorld(
   host: HTMLElement,
@@ -560,31 +643,37 @@ export async function createWorld(
     statue.rotation.y += delta * 0.8;
   });
 
-  const obstacles: { x: number; z: number; r: number }[] = [
-    { x: 0, z: 0, r: 2.7 },
-  ];
-  const zones = new Map<ZoneId, { center: THREE.Vector3; ring: THREE.Mesh; label: HTMLDivElement; anchor: THREE.Vector3; building: THREE.Group }>();
+  type Obstacle = { x: number; z: number; r: number; off?: boolean };
+  const obstacles: Obstacle[] = [{ x: 0, z: 0, r: 2.7 }];
+
+  type Zone = {
+    center: THREE.Vector3;
+    ring: THREE.Mesh;
+    label: HTMLDivElement;
+    anchor: THREE.Vector3;
+    building: THREE.Group;
+    color: string;
+    locked: boolean;
+    barrier: THREE.Group | null;
+    blockers: Obstacle[];
+  };
+  const zones = new Map<ZoneId, Zone>();
   const clickable: THREE.Object3D[] = [];
 
-  const builders: Record<AssetId, (color: string) => Built> = {
-    bank: (color) => buildBank(color),
-    bonds: (color) => buildBonds(color, updaters),
-    index: (color) => buildIndex(color, updaters),
-    snacks: (color) => buildSnacks(color, updaters),
-    bikes: (color) => buildBikes(color, updaters),
-    pixel: (color) => buildPixel(color, updaters),
-    rocket: (color) => buildRocket(color, updaters),
+  const placeBuilding = (slot: ZoneId | "job", built: Built) => {
+    const position = onRing(SLOTS[slot], RING);
+    built.group.position.copy(position);
+    built.group.rotation.y = Math.atan2(-position.x, -position.z);
+    scene.add(built.group);
+    obstacles.push({ x: position.x, z: position.z, r: slot === "clock" ? 2.4 : slot === "rocket" ? 3 : 3.9 });
+    return position;
   };
 
   const placeZone = (id: ZoneId, built: Built, color: string, name: string, kind: string) => {
     const degrees = SLOTS[id];
-    const position = onRing(degrees, RING);
-    built.group.position.copy(position);
-    built.group.rotation.y = Math.atan2(-position.x, -position.z);
+    const position = placeBuilding(id, built);
     built.group.userData.zone = id;
-    scene.add(built.group);
     clickable.push(built.group);
-    obstacles.push({ x: position.x, z: position.z, r: id === "clock" ? 2.4 : id === "rocket" ? 3 : 3.9 });
 
     const center = onRing(degrees, ZONE_RING);
     const ring = new THREE.Mesh(
@@ -608,13 +697,122 @@ export async function createWorld(
       label: element,
       anchor: position.clone().setY(built.height + 0.6),
       building: built.group,
+      color,
+      locked: false,
+      barrier: null,
+      blockers: [],
     });
+  };
+
+  const builders: Record<AssetId, (color: string) => Built> = {
+    bank: (color) => buildBank(color),
+    index: (color) => buildIndex(color, updaters),
+    snacks: (color) => buildSnacks(color, updaters),
+    pixel: (color) => buildPixel(color, updaters),
+    rocket: (color) => buildRocket(color, updaters),
   };
 
   for (const asset of ASSETS) {
     placeZone(asset.id, builders[asset.id](asset.color), asset.color, asset.name, asset.kind);
   }
+  placeZone("shop", buildShop(SHOP_COLOR, updaters), SHOP_COLOR, "Style Shop", "Hats for Penny");
   placeZone("clock", buildClock(updaters, clockSpin), GOLD, "Clock Tower", "Skip to next year");
+
+  const job = buildJob(JOB_COLOR, updaters);
+  const jobPosition = placeBuilding("job", job);
+  const jobLabel = label("Burger Barn", "Your job", JOB_COLOR);
+  overlay.append(jobLabel);
+  const jobAnchor = jobPosition.clone().setY(job.height + 0.6);
+  const jobDoor = onRing(SLOTS.job, RING - 2.6).setY(1.2);
+
+  // Each investment keeps a pile of coins beside its circle, one coin per $100, so you can see your money.
+  const stackGeometry = new THREE.CylinderGeometry(0.34, 0.34, 0.11, 18);
+  const stackMaterial = new THREE.MeshStandardMaterial({ color: GOLD, metalness: 0.45, roughness: 0.4, emissive: "#8a6200", emissiveIntensity: 0.3 });
+  type Stack = { mesh: THREE.InstancedMesh; slots: THREE.Vector3[]; shown: number; target: number; dirty: boolean; chip: HTMLDivElement; chipAnchor: THREE.Vector3 };
+  const stacks = new Map<AssetId, Stack>();
+  const hidden = new THREE.Matrix4().makeScale(0, 0, 0);
+  const placeInstance = new THREE.Object3D();
+
+  for (const asset of ASSETS) {
+    const degrees = SLOTS[asset.id];
+    const outward = onRing(degrees, 1);
+    const side = tangentOf(degrees);
+    const origin = onRing(degrees, ZONE_RING + 0.5).addScaledVector(side, 2.35);
+    const slots: THREE.Vector3[] = [];
+    for (let column = 0; column < STACK_COLUMNS; column++) {
+      const lateral = column % 4;
+      const depth = Math.floor(column / 4);
+      const base = origin.clone().addScaledVector(side, lateral * 0.76).addScaledVector(outward, -depth * 0.76);
+      for (let level = 0; level < COINS_PER_COLUMN; level++) slots.push(base.clone().setY(0.1 + level * 0.12));
+    }
+    const mesh = new THREE.InstancedMesh(stackGeometry, stackMaterial, STACK_CAPACITY);
+    // Instances live far from the mesh origin, so default culling would hide whole piles.
+    mesh.frustumCulled = false;
+    mesh.castShadow = true;
+    for (let index = 0; index < STACK_CAPACITY; index++) mesh.setMatrixAt(index, hidden);
+    scene.add(mesh);
+    const middle = origin.clone().addScaledVector(side, 1.14).addScaledVector(outward, -0.76);
+    obstacles.push({ x: middle.x, z: middle.z, r: 1.3 });
+    const chip = document.createElement("div");
+    chip.className = "world-stack";
+    chip.hidden = true;
+    overlay.append(chip);
+    stacks.set(asset.id, { mesh, slots, shown: 0, target: 0, dirty: false, chip, chipAnchor: middle.clone().setY(1.6) });
+  }
+
+  let stackRate = 40;
+  updaters.push((_, delta) => {
+    for (const stack of stacks.values()) {
+      if (!stack.dirty && stack.shown === stack.target) continue;
+      const step = (reducedMotion ? 999 : stackRate) * delta;
+      stack.shown = stack.shown < stack.target ? Math.min(stack.target, stack.shown + step) : Math.max(stack.target, stack.shown - step);
+      stack.dirty = false;
+      const whole = Math.floor(stack.shown);
+      const fraction = stack.shown - whole;
+      // The coin on top drops into place, so a growing pile looks like coins landing on it.
+      stack.slots.forEach((slot, index) => {
+        if (index < whole || (index === whole && fraction > 0)) {
+          placeInstance.position.copy(slot).setY(slot.y + (index === whole ? (1 - fraction) * 1.6 : 0));
+          placeInstance.rotation.set(0, index * 0.7, 0);
+          placeInstance.scale.setScalar(1);
+          placeInstance.updateMatrix();
+          stack.mesh.setMatrixAt(index, placeInstance.matrix);
+        } else {
+          stack.mesh.setMatrixAt(index, hidden);
+        }
+      });
+      stack.mesh.instanceMatrix.needsUpdate = true;
+    }
+  });
+
+  const setStacks = (amounts: Record<AssetId, number>, instant = false) => {
+    for (const [id, stack] of stacks) {
+      const amount = Math.max(0, amounts[id] ?? 0);
+      const unit = Math.max(STACK_UNIT, amount / STACK_CAPACITY);
+      stack.target = amount >= 1 ? Math.max(1, Math.round(amount / unit)) : 0;
+      if (instant) stack.shown = stack.target;
+      stack.dirty = true;
+      stack.chip.hidden = amount < 1;
+      stack.chip.textContent = `$${Math.round(amount).toLocaleString("en-US")}`;
+      const columns = Math.ceil(stack.target / COINS_PER_COLUMN);
+      stack.chipAnchor.setY(0.6 + Math.min(stack.target, COINS_PER_COLUMN) * 0.12 + (columns > 4 ? 0.2 : 0));
+    }
+  };
+
+  const barrierFor = (id: ZoneId, zone: Zone) => {
+    const barrier = buildBarrier();
+    barrier.position.copy(zone.center);
+    barrier.rotation.y = -THREE.MathUtils.degToRad(SLOTS[id]);
+    scene.add(barrier);
+    const side = tangentOf(SLOTS[id]);
+    zone.blockers = [-1.2, 0, 1.2].map((offset) => {
+      const point = zone.center.clone().addScaledVector(side, offset);
+      const blocker = { x: point.x, z: point.z, r: 0.8 };
+      obstacles.push(blocker);
+      return blocker;
+    });
+    return barrier;
+  };
 
   const treeRng = createRng(2024);
   const trees: { x: number; z: number; scale: number }[] = [];
@@ -660,9 +858,9 @@ export async function createWorld(
   for (let index = 0; index < 7; index++) {
     const cloud = new THREE.Group();
     for (let puff = 0; puff < 4; puff++) {
-      const sphere = new THREE.Mesh(new THREE.IcosahedronGeometry(1.4 + treeRng(), 1), paint("#ffffff"));
-      sphere.position.set(puff * 1.6 - 2.4, treeRng() * 0.6, treeRng() - 0.5);
-      cloud.add(sphere);
+      const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(1.4 + treeRng(), 1), paint("#ffffff"));
+      ball.position.set(puff * 1.6 - 2.4, treeRng() * 0.6, treeRng() - 0.5);
+      cloud.add(ball);
     }
     // Clouds stay over the water to the north so they never drift between the camera and the town.
     cloud.position.set(-70 + index * 20 + treeRng() * 8, 9 + treeRng() * 5, -38 - treeRng() * 16);
@@ -678,6 +876,7 @@ export async function createWorld(
 
   const { penny, body } = buildPenny();
   add(scene, penny, START.x, 0, START.z);
+  let hatModel: THREE.Group | null = null;
 
   const marker = new THREE.Mesh(
     new THREE.RingGeometry(0.35, 0.55, 28),
@@ -687,27 +886,91 @@ export async function createWorld(
   marker.position.y = 0.12;
   scene.add(marker);
 
-  const hidden = new THREE.Matrix4().makeScale(0, 0, 0);
-  const placeInstance = new THREE.Object3D();
+  const guideArrow = new THREE.Group();
+  const arrowHead = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.1, 4), new THREE.MeshBasicMaterial({ color: GOLD }));
+  arrowHead.rotation.x = Math.PI;
+  guideArrow.add(arrowHead);
+  const arrowRim = new THREE.Mesh(new THREE.ConeGeometry(0.66, 1.3, 4), new THREE.MeshBasicMaterial({ color: NAVY, side: THREE.BackSide }));
+  arrowRim.rotation.x = Math.PI;
+  guideArrow.add(arrowRim);
+  guideArrow.visible = false;
+  scene.add(guideArrow);
+  // A dotted gold trail on the ground leads from Penny to wherever the guide is pointing.
+  const TRAIL_DOTS = 40;
+  const trailGeometry = new THREE.CircleGeometry(0.2, 12);
+  trailGeometry.rotateX(-Math.PI / 2);
+  const trail = new THREE.InstancedMesh(trailGeometry, new THREE.MeshBasicMaterial({ color: GOLD }), TRAIL_DOTS);
+  trail.frustumCulled = false;
+  scene.add(trail);
+  const trailPoint = new THREE.Vector3();
+  const drawTrail = (time: number) => {
+    const zone = guide ? zones.get(guide) : null;
+    let used = 0;
+    if (zone && controls && !overview && !focusZone && guide !== currentZone) {
+      const start = penny.position.clone().setY(0);
+      const end = zone.center.clone().setY(0);
+      const points = [start];
+      // Bend the trail around the fountain instead of through it.
+      const along = end.clone().sub(start);
+      const t = THREE.MathUtils.clamp(-start.dot(along) / Math.max(along.lengthSq(), 0.0001), 0, 1);
+      const closest = start.clone().addScaledVector(along, t);
+      if (closest.length() < 4) {
+        const away = closest.length() > 0.3 ? closest.normalize() : new THREE.Vector3(-along.z, 0, along.x).normalize();
+        points.push(away.multiplyScalar(4.6));
+      }
+      points.push(end);
+      const spacing = 1.1;
+      let offset = reducedMotion ? 0 : (time * 2.2) % spacing;
+      let walked = 0;
+      for (let leg = 0; leg < points.length - 1 && used < TRAIL_DOTS; leg++) {
+        const from = points[leg];
+        const legLength = from.distanceTo(points[leg + 1]);
+        for (let distance = offset; distance < legLength && used < TRAIL_DOTS; distance += spacing) {
+          const total = walked + distance;
+          const remaining = start.distanceTo(end) - total;
+          if (total > 1.1 && (leg < points.length - 2 || legLength - distance > 1.7)) {
+            trailPoint.lerpVectors(from, points[leg + 1], distance / legLength);
+            placeInstance.position.set(trailPoint.x, 0.13, trailPoint.z);
+            placeInstance.rotation.set(0, 0, 0);
+            placeInstance.scale.setScalar(remaining < 3 ? 1.3 : 1);
+            placeInstance.updateMatrix();
+            trail.setMatrixAt(used++, placeInstance.matrix);
+          }
+        }
+        offset = (offset - legLength) % spacing;
+        if (offset < 0) offset += spacing;
+        walked += legLength;
+      }
+    }
+    for (let index = used; index < TRAIL_DOTS; index++) trail.setMatrixAt(index, hidden);
+    trail.instanceMatrix.needsUpdate = true;
+  };
+  const guideEdge = document.createElement("div");
+  guideEdge.className = "world-guide-edge";
+  guideEdge.innerHTML = GUIDE_ARROW;
+  guideEdge.hidden = true;
+  overlay.append(guideEdge);
+  let guide: ZoneId | null = null;
 
   type Spark = { position: THREE.Vector3; velocity: THREE.Vector3; life: number };
-  const sparks: Spark[] = Array.from({ length: 60 }, () => ({ position: new THREE.Vector3(), velocity: new THREE.Vector3(), life: 0 }));
+  const sparks: Spark[] = Array.from({ length: 90 }, () => ({ position: new THREE.Vector3(), velocity: new THREE.Vector3(), life: 0 }));
   const sparkMesh = new THREE.InstancedMesh(
     new THREE.OctahedronGeometry(0.13, 0),
     new THREE.MeshBasicMaterial({ color: GOLD }),
     sparks.length,
   );
   sparks.forEach((_, index) => sparkMesh.setMatrixAt(index, hidden));
+  sparkMesh.frustumCulled = false;
   scene.add(sparkMesh);
   let nextSpark = 0;
-  const burst = (at: THREE.Vector3) => {
-    for (let count = 0; count < 12; count++) {
+  const burst = (at: THREE.Vector3, count = 12, power = 1) => {
+    for (let index = 0; index < count; index++) {
       const spark = sparks[nextSpark];
       nextSpark = (nextSpark + 1) % sparks.length;
-      const angle = (count / 12) * Math.PI * 2;
+      const angle = (index / count) * Math.PI * 2;
       spark.position.copy(at);
-      spark.velocity.set(Math.cos(angle) * 3.2, 4 + Math.random() * 2.5, Math.sin(angle) * 3.2);
-      spark.life = 0.7;
+      spark.velocity.set(Math.cos(angle) * 3.2 * power, (4 + Math.random() * 2.5) * power, Math.sin(angle) * 3.2 * power);
+      spark.life = 0.7 * power;
     }
   };
   updaters.push((_, delta) => {
@@ -722,11 +985,49 @@ export async function createWorld(
       }
       placeInstance.position.copy(spark.position);
       placeInstance.rotation.set(spark.life * 9, spark.life * 7, 0);
-      placeInstance.scale.setScalar(spark.life / 0.7);
+      placeInstance.scale.setScalar(Math.min(1, spark.life / 0.7));
       placeInstance.updateMatrix();
       sparkMesh.setMatrixAt(index, placeInstance.matrix);
     });
     sparkMesh.instanceMatrix.needsUpdate = true;
+  });
+
+  // Coins that fly between Penny and a building make every deposit, withdrawal, and payday visible.
+  type Flight = { from: THREE.Vector3; to: () => THREE.Vector3; start: number; duration: number; arc: number; landed?: () => void };
+  const flights: (Flight | null)[] = Array(32).fill(null);
+  const flightMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 16), stackMaterial, flights.length);
+  flights.forEach((_, index) => flightMesh.setMatrixAt(index, hidden));
+  flightMesh.frustumCulled = false;
+  scene.add(flightMesh);
+  let nextFlight = 0;
+  const launch = (flight: Flight) => {
+    flights[nextFlight] = flight;
+    nextFlight = (nextFlight + 1) % flights.length;
+  };
+  const pennyTop = () => penny.position.clone().setY(1.4);
+  updaters.push((time) => {
+    flights.forEach((flight, index) => {
+      if (!flight) return;
+      const progress = (time - flight.start) / flight.duration;
+      if (progress < 0) {
+        flightMesh.setMatrixAt(index, hidden);
+        return;
+      }
+      if (progress >= 1) {
+        flights[index] = null;
+        flightMesh.setMatrixAt(index, hidden);
+        flight.landed?.();
+        return;
+      }
+      const to = flight.to();
+      placeInstance.position.lerpVectors(flight.from, to, progress);
+      placeInstance.position.y += Math.sin(progress * Math.PI) * flight.arc;
+      placeInstance.rotation.set(progress * 12, 0, progress * 5);
+      placeInstance.scale.setScalar(1);
+      placeInstance.updateMatrix();
+      flightMesh.setMatrixAt(index, placeInstance.matrix);
+    });
+    flightMesh.instanceMatrix.needsUpdate = true;
   });
 
   let weather: "rain" | "confetti" | null = null;
@@ -763,6 +1064,7 @@ export async function createWorld(
     };
   });
   confettiMesh.visible = false;
+  confettiMesh.frustumCulled = false;
   scene.add(confettiMesh);
 
   updaters.push((time, delta) => {
@@ -815,6 +1117,7 @@ export async function createWorld(
   let controls = false;
   let overview = false;
   let panelOpen = false;
+  let focusZone: ZoneId | null = null;
   let currentZone: ZoneId | null = null;
   let yaw = 0;
   let walkPhase = 0;
@@ -853,18 +1156,45 @@ export async function createWorld(
   camera.lookAt(cameraFocus);
 
   const projected = new THREE.Vector3();
-  const placeOnScreen = (element: HTMLElement, anchor: THREE.Vector3) => {
+  const placeOnScreen = (element: HTMLElement, anchor: THREE.Vector3, keepInside = false) => {
     projected.copy(anchor).project(camera);
     if (projected.z > 1 || Math.abs(projected.x) > 1.3 || Math.abs(projected.y) > 1.3) {
       element.style.visibility = "hidden";
       return;
     }
+    let x = (projected.x * 0.5 + 0.5) * width;
+    if (keepInside) {
+      const half = element.offsetWidth / 2 + 6;
+      x = THREE.MathUtils.clamp(x, half, width - half);
+    }
     element.style.visibility = "visible";
-    element.style.transform = `translate(${(projected.x * 0.5 + 0.5) * width}px, ${(-projected.y * 0.5 + 0.5) * height}px) translate(-50%, -100%)`;
+    element.style.transform = `translate(${x}px, ${(-projected.y * 0.5 + 0.5) * height}px) translate(-50%, -100%)`;
+  };
+
+  // When the guided building is off screen, an arrow on the edge of the view points the way.
+  const placeGuideEdge = () => {
+    const zone = guide ? zones.get(guide) : null;
+    if (!zone || !controls || overview) {
+      guideEdge.hidden = true;
+      return;
+    }
+    projected.copy(zone.center).setY(1).project(camera);
+    const inside = projected.z < 1 && Math.abs(projected.x) < 0.92 && Math.abs(projected.y) < 0.88;
+    guideEdge.hidden = inside;
+    if (inside) return;
+    const sign = projected.z > 1 ? -1 : 1;
+    const dx = projected.x * sign;
+    const dy = projected.y * sign;
+    // Phones keep the arrow further in, clear of the tool buttons down the right edge.
+    const scale = (camera.aspect < 0.85 ? 0.6 : 0.86) / Math.max(Math.abs(dx), Math.abs(dy), 0.0001);
+    const x = (dx * scale * 0.5 + 0.5) * width;
+    const y = (-dy * scale * 0.5 + 0.5) * height;
+    const angle = Math.atan2(-dy, dx);
+    guideEdge.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) rotate(${angle}rad)`;
   };
 
   const blocked = (x: number, z: number) =>
-    obstacles.some((obstacle) => Math.hypot(x - obstacle.x, z - obstacle.z) < obstacle.r + 1.2);
+    obstacles.some((obstacle) => !obstacle.off && Math.hypot(x - obstacle.x, z - obstacle.z) < obstacle.r + 1.2);
 
   const raycaster = new THREE.Raycaster();
   const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -872,7 +1202,7 @@ export async function createWorld(
 
   const walkTo = (zone: ZoneId) => {
     const entry = zones.get(zone);
-    if (!entry) return;
+    if (!entry || entry.locked) return;
     if (zone === currentZone) {
       events.onZone(zone);
       return;
@@ -946,9 +1276,20 @@ export async function createWorld(
     map.beginPath();
     map.arc(toMap(0), toMap(0), 9.2 * mapScale, 0, Math.PI * 2);
     map.fill();
+    map.fillStyle = JOB_COLOR;
+    map.beginPath();
+    map.arc(toMap(jobPosition.x), toMap(jobPosition.z), 4.5, 0, Math.PI * 2);
+    map.fill();
     for (const [id, zone] of zones) {
       const building = zone.building.position;
-      map.fillStyle = id === "clock" ? GOLD : ASSETS.find((asset) => asset.id === id)!.color;
+      if (id === guide) {
+        map.strokeStyle = GOLD;
+        map.lineWidth = 3;
+        map.beginPath();
+        map.arc(toMap(building.x), toMap(building.z), 9 + Math.sin(time * 5) * 1.5, 0, Math.PI * 2);
+        map.stroke();
+      }
+      map.fillStyle = zone.locked ? "#94a3b8" : zone.color;
       map.beginPath();
       map.arc(toMap(building.x), toMap(building.z), id === currentZone ? 7 : 5.5, 0, Math.PI * 2);
       map.fill();
@@ -1017,10 +1358,35 @@ export async function createWorld(
     const length = Math.hypot(dx, dz);
     const moving = controls && length > 0;
     if (moving) {
-      const step = Math.min(SPEED * delta, target ? length : Infinity);
-      penny.position.x += (dx / length) * step;
-      penny.position.z += (dz / length) * step;
+      let dirX = dx / length;
+      let dirZ = dz / length;
+      // Slide along anything in the way so a straight walk across the plaza curves around the fountain instead of sticking.
       for (const obstacle of obstacles) {
+        if (obstacle.off) continue;
+        const ox = penny.position.x - obstacle.x;
+        const oz = penny.position.z - obstacle.z;
+        const distance = Math.hypot(ox, oz);
+        if (distance < 0.0001 || distance > obstacle.r + PLAYER_RADIUS + 0.3) continue;
+        const nx = ox / distance;
+        const nz = oz / distance;
+        const into = dirX * nx + dirZ * nz;
+        if (into >= 0) continue;
+        dirX -= into * nx;
+        dirZ -= into * nz;
+        const slide = Math.hypot(dirX, dirZ);
+        if (slide < 0.25) {
+          dirX = -nz;
+          dirZ = nx;
+        } else {
+          dirX /= slide;
+          dirZ /= slide;
+        }
+      }
+      const step = Math.min(SPEED * delta, target ? length : Infinity);
+      penny.position.x += dirX * step;
+      penny.position.z += dirZ * step;
+      for (const obstacle of obstacles) {
+        if (obstacle.off) continue;
         const ox = penny.position.x - obstacle.x;
         const oz = penny.position.z - obstacle.z;
         const distance = Math.hypot(ox, oz);
@@ -1032,7 +1398,7 @@ export async function createWorld(
       }
       penny.position.x = THREE.MathUtils.clamp(penny.position.x, -BOUND, BOUND);
       penny.position.z = THREE.MathUtils.clamp(penny.position.z, -BOUND, BOUND);
-      yaw = Math.atan2(dx, dz);
+      yaw = Math.atan2(dirX, dirZ);
       walkPhase += delta * 13;
     }
     const facing = moving ? yaw : 0;
@@ -1051,6 +1417,7 @@ export async function createWorld(
   const checkZone = () => {
     let found: ZoneId | null = null;
     for (const [id, zone] of zones) {
+      if (zone.locked) continue;
       if (Math.hypot(penny.position.x - zone.center.x, penny.position.z - zone.center.z) < ZONE_RADIUS) {
         found = id;
       }
@@ -1063,19 +1430,23 @@ export async function createWorld(
     }
   };
 
+  const pop = (text: string, anchor: THREE.Vector3, time: number) => {
+    const element = document.createElement("div");
+    element.className = "world-pop";
+    element.textContent = text;
+    overlay.append(element);
+    pops.push({ element, anchor, until: time + 0.9 });
+  };
+
   const collectCoins = (time: number) => {
     for (const coin of coins) {
       if (coin.picked !== null) continue;
       const distance = Math.hypot(penny.position.x - coin.group.position.x, penny.position.z - coin.group.position.z);
-      if (distance < 1.25) {
+      if (distance < 1.4) {
         coin.picked = time;
         burst(coin.group.position);
         events.onCoin(coin.value);
-        const element = document.createElement("div");
-        element.className = "world-pop";
-        element.textContent = `+$${coin.value}`;
-        overlay.append(element);
-        pops.push({ element, anchor: coin.group.position.clone().setY(2.2), until: time + 0.9 });
+        pop(`+$${coin.value}`, coin.group.position.clone().setY(2.2), time);
       }
     }
   };
@@ -1102,9 +1473,16 @@ export async function createWorld(
   const desiredFocus = new THREE.Vector3();
   const desiredPosition = new THREE.Vector3();
   const animateCamera = (delta: number) => {
+    const focusEntry = focusZone ? zones.get(focusZone) : null;
     if (overview) {
       desiredFocus.set(0, 0, -1.5);
       desiredPosition.set(0, camera.aspect < 0.85 ? 74 : 40, camera.aspect < 0.85 ? 40 : 30);
+    } else if (focusEntry) {
+      // Frame the building beside the story card, which sits on the left on wide screens and at the bottom on phones.
+      desiredFocus.lerpVectors(focusEntry.center, focusEntry.building.position, 0.4);
+      if (camera.aspect >= 1) desiredFocus.x -= 5.5;
+      else desiredFocus.z += 7;
+      desiredPosition.copy(desiredFocus).add(cameraOffset);
     } else {
       // Slide the view so Penny stays visible beside the side panel, or above the bottom sheet on phones.
       desiredFocus.copy(penny.position);
@@ -1114,7 +1492,7 @@ export async function createWorld(
       }
       desiredPosition.copy(desiredFocus).add(cameraOffset);
     }
-    const blend = reducedMotion ? 1 : 1 - Math.exp(-delta * (overview ? 2.2 : 4.5));
+    const blend = reducedMotion ? 1 : 1 - Math.exp(-delta * (overview || focusEntry ? 2.2 : 4.5));
     cameraFocus.lerp(desiredFocus, blend);
     camera.position.lerp(desiredPosition, blend);
     camera.lookAt(cameraFocus);
@@ -1139,9 +1517,16 @@ export async function createWorld(
 
     for (const [id, zone] of zones) {
       const active = id === currentZone;
-      const pulse = reducedMotion ? 1 : 1 + Math.sin(time * 3) * 0.05;
+      const guided = id === guide;
+      const pulse = reducedMotion ? 1 : 1 + Math.sin(time * (guided ? 6 : 3)) * (guided ? 0.12 : 0.05);
       zone.ring.scale.setScalar(active ? 1.18 : pulse);
-      (zone.ring.material as THREE.MeshBasicMaterial).opacity = active ? 1 : 0.8;
+      (zone.ring.material as THREE.MeshBasicMaterial).opacity = active || guided ? 1 : 0.8;
+    }
+    const guideZone = guide ? zones.get(guide) : null;
+    guideArrow.visible = Boolean(guideZone) && !overview && guide !== currentZone;
+    if (guideZone) {
+      guideArrow.position.copy(guideZone.center).setY(2.3 + (reducedMotion ? 0 : Math.abs(Math.sin(time * 3)) * 0.7));
+      guideArrow.rotation.y = time * 2;
     }
     for (const [group, bounce] of bounces) {
       const progress = (time - bounce.start) / 0.7;
@@ -1159,21 +1544,26 @@ export async function createWorld(
     animateCamera(delta);
     if (minimap.offsetParent) drawMinimap(time);
     for (const zone of zones.values()) placeOnScreen(zone.label, zone.anchor);
-    for (const tag of returnTags) placeOnScreen(tag.element, tag.anchor);
+    placeOnScreen(jobLabel, jobAnchor);
+    for (const stack of stacks.values()) if (!stack.chip.hidden) placeOnScreen(stack.chip, stack.chipAnchor);
+    for (const tag of returnTags) placeOnScreen(tag.element, tag.anchor, true);
     for (let index = pops.length - 1; index >= 0; index--) {
-      const pop = pops[index];
-      if (time > pop.until) {
-        pop.element.remove();
+      const item = pops[index];
+      if (time > item.until) {
+        item.element.remove();
         pops.splice(index, 1);
       } else {
-        placeOnScreen(pop.element, pop.anchor);
+        placeOnScreen(item.element, item.anchor);
       }
     }
+    placeGuideEdge();
+    drawTrail(time);
     renderer.render(scene, camera);
   };
   frame = requestAnimationFrame(loop);
 
   const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  const now = () => performance.now() / 1000;
 
   const clearReturnTags = () => {
     for (const tag of returnTags) tag.element.remove();
@@ -1189,7 +1579,7 @@ export async function createWorld(
       values.forEach((value, index) => {
         const bonus = index === values.length - 1;
         for (let attempt = 0; attempt < 200; attempt++) {
-          const spot = onRing(rng() * 360, bonus ? 20 + rng() * 4 : 4 + rng() * 17);
+          const spot = onRing(rng() * 360, bonus ? 20 + rng() * 4 : 4 + rng() * 15);
           const nearZone = [...zones.values()].some((zone) => spot.distanceTo(zone.center) < 2.4);
           const nearCoin = placed.some((other) => Math.hypot(spot.x - other.x, spot.z - other.z) < 3);
           const nearPlayer = spot.distanceTo(penny.position) < 2.5;
@@ -1216,12 +1606,6 @@ export async function createWorld(
     setPanelOpen(open) {
       panelOpen = open;
     },
-    setLabelDetails(details) {
-      for (const [id, text] of Object.entries(details)) {
-        const detail = zones.get(id as ZoneId)?.label.querySelector("small");
-        if (detail && text) detail.textContent = text;
-      }
-    },
     setControls(enabled) {
       controls = enabled;
       if (!enabled) {
@@ -1229,29 +1613,109 @@ export async function createWorld(
         target = null;
       }
     },
-    async playYearEnd(returns, economy) {
+    setLabels(details) {
+      for (const [id, text] of Object.entries(details)) {
+        const detail = zones.get(id as ZoneId)?.label.querySelector("small");
+        if (detail && text) detail.textContent = text;
+      }
+    },
+    setLocked(locked) {
+      for (const [id, isLocked] of Object.entries(locked) as [ZoneId, boolean][]) {
+        const zone = zones.get(id);
+        if (!zone) continue;
+        zone.locked = isLocked;
+        zone.ring.visible = !isLocked;
+        zone.label.classList.toggle("is-locked", isLocked);
+        if (isLocked && !zone.barrier) zone.barrier = barrierFor(id, zone);
+        if (zone.barrier) zone.barrier.visible = isLocked;
+        for (const blocker of zone.blockers) blocker.off = !isLocked;
+      }
+    },
+    celebrate(ids) {
+      for (const id of ids) {
+        const zone = zones.get(id);
+        if (!zone) continue;
+        burst(zone.center.clone().setY(1.5), 24, 1.3);
+        burst(zone.building.position.clone().setY(4), 18, 1.1);
+        bounces.set(zone.building, { start: now(), sign: 1 });
+      }
+    },
+    focus(zone) {
+      focusZone = zone;
+    },
+    setGuide(zone) {
+      guide = zone;
+    },
+    setStacks,
+    flyCoins(zone, direction, amount) {
+      const count = THREE.MathUtils.clamp(Math.round(amount / 100), 1, 8);
+      const start = now();
+      const destination =
+        zone === "shop"
+          ? () => zones.get("shop")!.building.position.clone().setY(1.2)
+          : () => {
+              const stack = stacks.get(zone)!;
+              return stack.chipAnchor.clone().setY(Math.max(0.4, stack.chipAnchor.y - 0.6));
+            };
+      for (let index = 0; index < count; index++) {
+        const from = direction === "in" ? pennyTop() : destination();
+        launch({
+          from,
+          to: direction === "in" ? destination : pennyTop,
+          start: start + index * 0.06,
+          duration: 0.5,
+          arc: 2.4,
+        });
+      }
+    },
+    payday() {
+      const start = now();
+      for (let index = 0; index < 10; index++) {
+        launch({
+          from: jobDoor.clone(),
+          to: pennyTop,
+          start: start + index * 0.08,
+          duration: 0.8,
+          arc: 4,
+          landed: index === 9 ? () => burst(penny.position.clone().setY(1.4), 14) : undefined,
+        });
+      }
+    },
+    setHat(hat) {
+      if (hatModel) body.remove(hatModel);
+      hatModel = hat ? buildHat(hat) : null;
+      if (hatModel) {
+        add(body, hatModel);
+        burst(penny.position.clone().setY(2), 10, 0.8);
+      }
+    },
+    async playYearEnd(yearEnd) {
       controls = false;
       keys.clear();
       target = null;
       steering = null;
       overview = true;
-      setMood(economy);
+      setMood(yearEnd.economy);
       overlay.classList.add("is-overview");
       clockSpin.speed = 1;
-      for (const coin of coins) coin.picked = coin.picked ?? performance.now() / 1000 - 0.3;
-      await wait(reducedMotion ? 150 : 1100);
+      for (const coin of coins) coin.picked = coin.picked ?? now() - 0.3;
+      await wait(reducedMotion ? 150 : 1000);
+      stackRate = 14;
+      setStacks(yearEnd.stacks);
       for (const asset of ASSETS) {
-        const zone = zones.get(asset.id)!;
-        const change = returns[asset.id];
+        const tag = yearEnd.tags[asset.id];
+        if (!tag) continue;
         const element = document.createElement("div");
-        element.className = `world-return ${change >= 0 ? "is-up" : "is-down"}`;
-        element.textContent = `${change >= 0 ? "+" : "−"}${Math.abs(change * 100).toFixed(1)}%`;
+        element.className = `world-return ${tag.up ? "is-up" : "is-down"} ${tag.owned ? "is-owned" : ""}`;
+        element.textContent = tag.text;
         overlay.append(element);
+        const zone = zones.get(asset.id)!;
         returnTags.push({ element, anchor: zone.anchor });
-        bounces.set(zone.building, { start: performance.now() / 1000, sign: change >= 0 ? 1 : -1 });
+        bounces.set(zone.building, { start: now(), sign: tag.up ? 1 : -1 });
         await wait(reducedMotion ? 0 : 140);
       }
-      await wait(reducedMotion ? 300 : 1800);
+      await wait(reducedMotion ? 300 : 2200);
+      stackRate = 40;
     },
     startYear() {
       clearReturnTags();
@@ -1289,7 +1753,10 @@ export async function createWorld(
       renderer.dispose();
       renderer.domElement.remove();
       for (const zone of zones.values()) zone.label.remove();
-      for (const pop of pops) pop.element.remove();
+      jobLabel.remove();
+      guideEdge.remove();
+      for (const stack of stacks.values()) stack.chip.remove();
+      for (const item of pops) item.element.remove();
       clearReturnTags();
     },
   };

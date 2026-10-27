@@ -9,6 +9,8 @@ export type Sound = {
   good: () => void;
   bad: () => void;
   fastForward: () => void;
+  payday: () => void;
+  fanfare: () => void;
 };
 
 export function createSound(): Sound {
@@ -72,6 +74,25 @@ export function createSound(): Sound {
           length: 0.035,
           type: "square" as const,
           volume: 0.018,
+        })),
+      ),
+    payday: () =>
+      play(
+        Array.from({ length: 6 }, (_, index) => ({
+          frequency: index % 2 ? 1568 : 1319,
+          at: 0.35 + index * 0.08,
+          length: 0.12,
+          type: "square" as const,
+          volume: 0.03,
+        })),
+      ),
+    fanfare: () =>
+      play(
+        [392, 523, 659, 784, 659, 784].map((frequency, index) => ({
+          frequency,
+          at: index < 4 ? index * 0.1 : 0.4 + (index - 4) * 0.16,
+          length: index === 5 ? 0.5 : 0.18,
+          volume: 0.06,
         })),
       ),
     bad: () =>

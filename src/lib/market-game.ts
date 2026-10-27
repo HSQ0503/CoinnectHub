@@ -1,36 +1,55 @@
 import {
   ASSET_IDS,
-  BOND_HEADLINES,
   COMPANY_EVENTS,
   ECONOMY_HEADLINES,
   LIFE_COSTS,
   LIFE_GIFTS,
   ROCKET_EVENTS,
   STOCK_BETA,
+  TEMPTATIONS,
+  TIPS,
+  UNLOCK_STORIES,
   assetById,
+  hatById,
+  unlockYear,
   type AssetId,
+  type BadgeId,
   type CompanyEvent,
+  type DreamId,
   type Economy,
+  type HatId,
   type LifeEvent,
   type RocketMove,
+  type Temptation,
+  type Tip,
 } from "./market-data.ts";
 
 export const START_AGE = 15;
 export const START_CASH = 1000;
-export const COINS_PER_YEAR = 9;
+export const BONUS_COINS = [10, 10, 10, 10, 10, 10, 40];
+const BONUS_TOTAL = BONUS_COINS.reduce((total, value) => total + value, 0);
 
 export type Holdings = Record<AssetId, number>;
+
+export type YearEvent =
+  | { kind: "crash" }
+  | { kind: "hype" }
+  | { kind: "tip"; tip: Tip }
+  | { kind: "temptation"; temptation: Temptation };
 
 export type YearOutcome = {
   economy: Economy;
   headline: string;
   inflation: number;
   returns: Holdings;
-  news: Partial<Record<AssetId, string>>;
+  news: Record<AssetId, string>;
   lifeEvent: LifeEvent | null;
+  event: YearEvent | null;
 };
 
 export type Trade = { year: number; asset: AssetId; amount: number };
+export type Purchase = { year: number; name: string; price: number };
+export type ChoiceRecord = { id: string; amount: number };
 
 export type YearRecord = {
   year: number;
@@ -38,6 +57,7 @@ export type YearRecord = {
   endWorth: number;
   income: number;
   gain: number;
+  startHoldings: Holdings;
   forcedSales: number;
   shares: Holdings;
   cashShare: number;
@@ -47,18 +67,26 @@ export type GameState = {
   seed: number;
   years: number;
   year: number;
+  dream: DreamId;
+  goal: number;
   cash: number;
   holdings: Holdings;
   basis: Holdings;
   timeline: YearOutcome[];
   income: number[];
+  paydays: number;
   trades: Trade[];
+  purchases: Purchase[];
+  choices: Partial<Record<number, ChoiceRecord>>;
+  hats: HatId[];
+  hat: HatId | null;
+  badges: BadgeId[];
   history: YearRecord[];
   priceLevel: number;
 };
 
 export function emptyHoldings(): Holdings {
-  return { bank: 0, bonds: 0, index: 0, snacks: 0, bikes: 0, pixel: 0, rocket: 0 };
+  return { bank: 0, index: 0, snacks: 0, pixel: 0, rocket: 0 };
 }
 
 export function createRng(seed: number) {
@@ -74,9 +102,13 @@ export function createRng(seed: number) {
 
 type Rng = () => number;
 
-const between = (rng: Rng, [low, high]: [number, number]) =>
-  low + rng() * (high - low);
+const between = (rng: Rng, [low, high]: [number, number]) => low + rng() * (high - low);
 const round3 = (value: number) => Math.round(value * 1000) / 1000;
+const toCents = (value: number) => Math.round(value * 100) / 100;
+
+const dollars = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const money = (value: number) => dollars.format(Math.round(value));
+const percent = (value: number) => `${Math.round(Math.abs(value) * 100)}%`;
 
 function pick<T>(rng: Rng, items: T[]) {
   return items[Math.floor(rng() * items.length)];
@@ -110,23 +142,28 @@ const BANK_RANGE: Record<Economy, [number, number]> = {
   slowdown: [0.02, 0.03],
   crash: [0.01, 0.02],
 };
-const BOND_TILT: Record<Economy, number> = {
-  boom: -0.03,
-  normal: 0,
-  slowdown: 0.03,
-  crash: 0.06,
-};
 
-function drawEconomies(rng: Rng, years: number): Economy[] {
-  // Every game gets one crash away from the edges, because living through one is the lesson.
-  const crashYear = 1 + Math.floor(rng() * (years - 2));
+export function ageAt(year: number) {
+  return START_AGE + year;
+}
+
+export function salaryFor(year: number) {
+  const age = ageAt(year);
+  return age >= 21 ? 750 : age >= 18 ? 600 : 500;
+}
+
+// Every game gets one crash once the Market Fund has been open for a while, because living through one is the lesson.
+function crashRange(years: number): [number, number] {
+  return years >= 8 ? [3, years - 3] : [2, years - 2];
+}
+
+function drawEconomies(rng: Rng, years: number, crashYear: number): Economy[] {
   return Array.from({ length: years }, (_, year) => {
     if (year === crashYear) return "crash";
     if (year === crashYear + 1) {
       return weighted<Economy>(rng, [
-        { item: "boom", weight: 5.5 },
-        { item: "normal", weight: 3.5 },
-        { item: "slowdown", weight: 1 },
+        { item: "boom", weight: 7 },
+        { item: "normal", weight: 3 },
       ]);
     }
     return weighted<Economy>(rng, [
@@ -141,13 +178,10 @@ function rocketMove(rng: Rng, economy: Economy): RocketMove {
   const weights: Record<RocketMove, number> =
     economy === "crash"
       ? { moon: 1, drift: 2, crash: 4.5, wipeout: 2.5 }
-      : { moon: 2.7, drift: 3.2, crash: 3.3, wipeout: 0.8 };
+      : { moon: 2.2, drift: 3.4, crash: 3.4, wipeout: 1 };
   return weighted(
     rng,
-    (Object.keys(weights) as RocketMove[]).map((item) => ({
-      item,
-      weight: weights[item],
-    })),
+    (Object.keys(weights) as RocketMove[]).map((item) => ({ item, weight: weights[item] })),
   );
 }
 
@@ -157,36 +191,64 @@ function drawLifeEvents(rng: Rng, years: number) {
   const costCount = years >= 8 ? 3 : 1;
   for (let count = 0; count < costCount + 1 && slots.length; count++) {
     const year = slots.splice(Math.floor(rng() * slots.length), 1)[0];
-    const age = START_AGE + year;
     const pool =
       count < costCount
-        ? LIFE_COSTS.filter((event) => (event.minAge ?? 0) <= age)
+        ? LIFE_COSTS.filter((event) => (event.minAge ?? 0) <= ageAt(year))
         : LIFE_GIFTS;
     events[year] = pick(rng, pool);
   }
   return events;
 }
 
+function planEvents(rng: Rng, years: number, crashYear: number, moonYear: number) {
+  const events: (YearEvent | null)[] = Array(years).fill(null);
+  if (crashYear + 1 < years) events[crashYear + 1] = { kind: "crash" };
+  if (moonYear + 1 < years && !events[moonYear + 1]) events[moonYear + 1] = { kind: "hype" };
+  const open = (from: number) =>
+    Array.from({ length: years }, (_, year) => year).filter((year) => year >= from && !events[year]);
+
+  const tipYears = open(unlockYear("pixel", years) + 1);
+  if (tipYears.length) events[pick(rng, tipYears)] = { kind: "tip", tip: pick(rng, TIPS) };
+
+  const temptationCount = years >= 8 ? 2 : 1;
+  const used = new Set<string>();
+  for (let count = 0; count < temptationCount; count++) {
+    const choices = open(1);
+    if (!choices.length) break;
+    const year = pick(rng, choices);
+    const pool = TEMPTATIONS.filter((item) => (item.minAge ?? 0) <= ageAt(year) && !used.has(item.id));
+    if (!pool.length) continue;
+    const temptation = pick(rng, pool);
+    used.add(temptation.id);
+    events[year] = { kind: "temptation", temptation };
+  }
+  return events;
+}
+
 function drawTimeline(rng: Rng, years: number): YearOutcome[] {
-  const economies = drawEconomies(rng, years);
+  const [low, high] = crashRange(years);
+  const crashYear = low + Math.floor(rng() * (high - low + 1));
+  const rocketOpens = unlockYear("rocket", years);
+  let moonYear = rocketOpens + Math.floor(rng() * (years - 1 - rocketOpens));
+  if (moonYear === crashYear) moonYear = crashYear > rocketOpens ? crashYear - 1 : crashYear + 1;
+  const economies = drawEconomies(rng, years, crashYear);
   const lifeEvents = drawLifeEvents(rng, years);
+  const events = planEvents(rng, years, crashYear, moonYear);
 
   return economies.map((economy, year) => {
-    const market = between(rng, MARKET_RANGE[economy]);
+    const market = round3(between(rng, MARKET_RANGE[economy]));
     const returns = emptyHoldings();
-    const news: Partial<Record<AssetId, string>> = {};
+    const news = {} as Record<AssetId, string>;
 
-    returns.bank = between(rng, BANK_RANGE[economy]);
-    news.bank = `Penny Savings Bank pays ${(round3(returns.bank) * 100).toFixed(1)}% interest`;
-    returns.bonds = between(rng, [0.02, 0.05]) + BOND_TILT[economy] + between(rng, [-0.02, 0.02]);
-    news.bonds = BOND_HEADLINES[economy];
+    returns.bank = round3(between(rng, BANK_RANGE[economy]));
+    news.bank = `The bank paid ${(returns.bank * 100).toFixed(1)}% interest`;
     returns.index = market;
     news.index =
       market >= 0
-        ? `The 500 companies in the fund grow ${Math.round(market * 100)}% together`
-        : `Most of the 500 companies in the fund lose value this year`;
+        ? `The companies in the fund grew ${Math.round(market * 100)}% together`
+        : "Most of the companies in the fund lost value";
 
-    for (const id of ["snacks", "bikes", "pixel"] as const) {
+    for (const id of ["snacks", "pixel"] as const) {
       const event = weighted<CompanyEvent>(
         rng,
         COMPANY_EVENTS[id].map((item) => ({ item, weight: item.weight })),
@@ -201,7 +263,16 @@ function drawTimeline(rng: Rng, years: number): YearOutcome[] {
       news[id] = event.text;
     }
 
-    const move = rocketMove(rng, economy);
+    // The year everyone piles into Rocket Coin is the year it falls, which is how hype usually ends.
+    const move: RocketMove =
+      year === moonYear
+        ? "moon"
+        : year === moonYear + 1
+          ? weighted<RocketMove>(rng, [
+              { item: "crash", weight: 3 },
+              { item: "wipeout", weight: 1 },
+            ])
+          : rocketMove(rng, economy);
     returns.rocket = between(rng, ROCKET_EVENTS[move].range);
     news.rocket = ROCKET_EVENTS[move].text;
 
@@ -214,6 +285,7 @@ function drawTimeline(rng: Rng, years: number): YearOutcome[] {
       returns,
       news,
       lifeEvent: lifeEvents[year],
+      event: events[year],
     };
   });
 }
@@ -226,41 +298,89 @@ function isTeachable(timeline: YearOutcome[]) {
   const index = growthOf(timeline, "index");
   const bank = growthOf(timeline, "bank");
   const margin = timeline.length >= 8 ? 1.15 : 1.04;
-  return index > bank * margin && growthOf(timeline, "rocket") < index * 4;
+  return (
+    index > bank * margin &&
+    growthOf(timeline, "rocket") < index * 3 &&
+    growthOf(timeline, "pixel") < index * 2.2 &&
+    growthOf(timeline, "snacks") < index * 1.8
+  );
 }
 
 export function generateTimeline(seed: number, years: number) {
   // Real markets usually reward patience over a decade, so reroll the rare runs that teach the opposite.
-  for (let attempt = 0; attempt < 60; attempt++) {
+  for (let attempt = 0; attempt < 80; attempt++) {
     const timeline = drawTimeline(createRng(seed + attempt * 7919), years);
     if (isTeachable(timeline)) return timeline;
   }
   return drawTimeline(createRng(seed), years);
 }
 
-export function createGame(seed: number, years: number): GameState {
+type Pick = "cash" | AssetId;
+
+// Plays a fixed plan with the given yearly income, using the bank until the planned place opens.
+function simulate(timeline: YearOutcome[], incomes: number[], plan: Pick) {
+  let value = START_CASH;
+  const path = [value];
+  incomes.forEach((income, year) => {
+    const outcome = timeline[year];
+    const asset = plan === "cash" ? null : unlockYear(plan, timeline.length) <= year ? plan : "bank";
+    value = (value + income) * (1 + (asset ? outcome.returns[asset] : 0));
+    value = Math.max(0, value + (outcome.lifeEvent?.amount ?? 0));
+    path.push(value);
+  });
+  return path;
+}
+
+// The goal sits a little past what steady saving can reach, so getting there takes some investing.
+const GOAL_SHARE = 0.3;
+
+export function goalFor(timeline: YearOutcome[]) {
+  const incomes = (bonus: number) => timeline.map((_, year) => salaryFor(year) + BONUS_TOTAL * bonus);
+  // Assume a player grabs most of the bonus coins, but never let saving every coin in the bank be enough.
+  const typical = incomes(0.6);
+  const bank = simulate(timeline, typical, "bank").at(-1)!;
+  const index = simulate(timeline, typical, "index").at(-1)!;
+  const savedEverything = simulate(timeline, incomes(1), "bank").at(-1)!;
+  const goal = Math.round((bank + GOAL_SHARE * (index - bank)) / 100) * 100;
+  const margin = timeline.length >= 8 ? 1.04 : 1.02;
+  return Math.max(goal, Math.ceil((savedEverything * margin) / 100) * 100);
+}
+
+export function createGame(seed: number, years: number, dream: DreamId = "car"): GameState {
+  const timeline = generateTimeline(seed, years);
   return {
     seed,
     years,
     year: 0,
+    dream,
+    goal: goalFor(timeline),
     cash: START_CASH,
     holdings: emptyHoldings(),
     basis: emptyHoldings(),
-    timeline: generateTimeline(seed, years),
+    timeline,
     income: Array(years).fill(0),
+    paydays: 0,
     trades: [],
+    purchases: [],
+    choices: {},
+    hats: [],
+    hat: null,
+    badges: [],
     history: [],
     priceLevel: 1,
   };
 }
 
-export function coinValues(year: number) {
-  const value = START_AGE + year >= 21 ? 75 : START_AGE + year >= 18 ? 60 : 50;
-  return [...Array(COINS_PER_YEAR - 1).fill(value), value * 2];
-}
-
 export function isFinished(state: GameState) {
   return state.year >= state.years;
+}
+
+export function isUnlocked(state: GameState, id: AssetId) {
+  return unlockYear(id, state.years) <= state.year;
+}
+
+export function unlocksThisYear(state: GameState) {
+  return UNLOCK_STORIES.filter((story) => unlockYear(story.ids[0], state.years) === state.year);
 }
 
 export function invested(state: GameState) {
@@ -271,6 +391,57 @@ export function netWorth(state: GameState) {
   return state.cash + invested(state);
 }
 
+const MARKET_IDS: AssetId[] = ["index", "snacks", "pixel", "rocket"];
+
+function marketValue(holdings: Holdings) {
+  return MARKET_IDS.reduce((total, id) => total + holdings[id], 0);
+}
+
+function choiceFor(state: GameState, kind: YearEvent["kind"]) {
+  const year = state.timeline.findIndex((outcome) => outcome.event?.kind === kind);
+  return year >= 0 ? { year, choice: state.choices[year] } : null;
+}
+
+function soldAfterCrash(state: GameState) {
+  const reaction = choiceFor(state, "crash");
+  if (!reaction) return false;
+  const manual = state.trades.some(
+    (trade) => trade.year === reaction.year && trade.amount <= -100 && MARKET_IDS.includes(trade.asset),
+  );
+  return reaction.choice?.id === "sell" || manual;
+}
+
+function award(state: GameState): GameState {
+  const earned = new Set(state.badges);
+  const finishedYear = (year: number) => state.history.some((record) => record.year === year);
+
+  if (state.trades.some((trade) => trade.year === 0 && trade.amount > 0)) earned.add("early");
+  if (ASSET_IDS.filter((id) => state.holdings[id] >= 100).length >= 3) earned.add("basket");
+
+  const reaction = choiceFor(state, "crash");
+  if (reaction && finishedYear(reaction.year) && ["hold", "buy"].includes(reaction.choice?.id ?? "") && !soldAfterCrash(state)) {
+    earned.add("cool");
+  }
+  const hype = choiceFor(state, "hype");
+  const chasedHype = state.trades.some((trade) => trade.year === hype?.year && trade.asset === "rocket" && trade.amount > 0);
+  if (hype && finishedYear(hype.year) && hype.choice?.id === "skip" && !chasedHype) earned.add("hype");
+
+  if (state.history.some((record) => (state.timeline[record.year].lifeEvent?.amount ?? 0) < 0 && record.forcedSales === 0)) {
+    earned.add("rainy");
+  }
+  if (isFinished(state) && netWorth(state) >= state.goal) earned.add("dream");
+
+  return earned.size === state.badges.length ? state : { ...state, badges: [...earned] };
+}
+
+export function payday(state: GameState): GameState {
+  if (isFinished(state) || state.paydays > state.year) return state;
+  const salary = salaryFor(state.year);
+  const income = [...state.income];
+  income[state.year] += salary;
+  return { ...state, cash: state.cash + salary, income, paydays: state.year + 1 };
+}
+
 export function collectCoin(state: GameState, value: number): GameState {
   if (isFinished(state)) return state;
   const income = [...state.income];
@@ -278,18 +449,16 @@ export function collectCoin(state: GameState, value: number): GameState {
   return { ...state, cash: state.cash + value, income };
 }
 
-const toCents = (value: number) => Math.round(value * 100) / 100;
-
 export function buy(state: GameState, asset: AssetId, amount: number): GameState {
   const spend = toCents(Math.min(amount, state.cash));
-  if (spend <= 0 || isFinished(state)) return state;
-  return {
+  if (spend <= 0 || isFinished(state) || !isUnlocked(state, asset)) return state;
+  return award({
     ...state,
     cash: toCents(state.cash - spend),
     holdings: { ...state.holdings, [asset]: state.holdings[asset] + spend },
     basis: { ...state.basis, [asset]: state.basis[asset] + spend },
     trades: [...state.trades, { year: state.year, asset, amount: spend }],
-  };
+  });
 }
 
 export function sell(state: GameState, asset: AssetId, amount: number): GameState {
@@ -297,39 +466,55 @@ export function sell(state: GameState, asset: AssetId, amount: number): GameStat
   const take = Math.min(amount, held);
   if (take <= 0 || isFinished(state)) return state;
   const left = held - take < 0.005 ? 0 : held - take;
-  return {
+  return award({
     ...state,
     cash: toCents(state.cash + take),
     holdings: { ...state.holdings, [asset]: left },
-    basis: {
-      ...state.basis,
-      [asset]: left === 0 ? 0 : state.basis[asset] * (left / held),
-    },
+    basis: { ...state.basis, [asset]: left === 0 ? 0 : state.basis[asset] * (left / held) },
     trades: [...state.trades, { year: state.year, asset, amount: -take }],
+  });
+}
+
+function spend(state: GameState, name: string, price: number): GameState {
+  if (price > state.cash + 0.005 || isFinished(state)) return state;
+  return {
+    ...state,
+    cash: toCents(state.cash - price),
+    purchases: [...state.purchases, { year: state.year, name, price }],
   };
 }
 
+export function buyHat(state: GameState, id: HatId): GameState {
+  if (state.hats.includes(id)) return { ...state, hat: id };
+  const hat = hatById(id);
+  const next = spend(state, hat.name.toLowerCase(), hat.price);
+  return next === state ? state : { ...next, hats: [...next.hats, id], hat: id };
+}
+
+export function wearHat(state: GameState, id: HatId | null): GameState {
+  return id === null || state.hats.includes(id) ? { ...state, hat: id } : state;
+}
+
 // Emergencies drain the safest money first, the way most people would cover a bill.
-const SELL_ORDER: AssetId[] = ["bank", "bonds", "index", "snacks", "bikes", "pixel", "rocket"];
+const SELL_ORDER: AssetId[] = ["bank", "index", "snacks", "pixel", "rocket"];
 
 export function endYear(state: GameState): GameState {
   if (isFinished(state)) return state;
-  const outcome = state.timeline[state.year];
-  const startWorth = netWorth(state);
+  const paid = payday(state);
+  const outcome = paid.timeline[paid.year];
+  const startWorth = netWorth(paid);
   const shares = emptyHoldings();
-  for (const id of ASSET_IDS) {
-    shares[id] = startWorth > 0 ? state.holdings[id] / startWorth : 0;
-  }
-
   const holdings = emptyHoldings();
   for (const id of ASSET_IDS) {
-    holdings[id] = state.holdings[id] * (1 + outcome.returns[id]);
+    shares[id] = startWorth > 0 ? paid.holdings[id] / startWorth : 0;
+    holdings[id] = paid.holdings[id] * (1 + outcome.returns[id]);
   }
-  const gain = ASSET_IDS.reduce((total, id) => total + holdings[id] - state.holdings[id], 0);
+  const gain = ASSET_IDS.reduce((total, id) => total + holdings[id] - paid.holdings[id], 0);
 
-  let cash = state.cash + (outcome.lifeEvent?.amount ?? 0);
+  let cash = paid.cash + (outcome.lifeEvent?.amount ?? 0);
+  // Savings are meant to cover surprises, so only money pulled out of real investments counts as a forced sale.
   let forcedSales = 0;
-  const basis = { ...state.basis };
+  const basis = { ...paid.basis };
   for (const id of SELL_ORDER) {
     if (cash >= 0) break;
     const take = Math.min(holdings[id], -cash);
@@ -337,119 +522,253 @@ export function endYear(state: GameState): GameState {
     basis[id] *= (holdings[id] - take) / holdings[id];
     holdings[id] -= take;
     cash += take;
-    forcedSales += take;
+    if (id !== "bank") forcedSales += take;
   }
   cash = Math.max(0, toCents(cash));
 
   const next = {
-    ...state,
+    ...paid,
     cash,
     holdings,
     basis,
-    year: state.year + 1,
-    priceLevel: state.priceLevel * (1 + outcome.inflation),
+    year: paid.year + 1,
+    priceLevel: paid.priceLevel * (1 + outcome.inflation),
   };
-  const endWorth = netWorth(next);
-  return {
+  return award({
     ...next,
     history: [
-      ...state.history,
+      ...paid.history,
       {
-        year: state.year,
+        year: paid.year,
         startWorth,
-        endWorth,
-        income: state.income[state.year],
+        endWorth: netWorth(next),
+        income: paid.income[paid.year],
         gain,
+        startHoldings: { ...paid.holdings },
         forcedSales,
         shares,
-        cashShare: startWorth > 0 ? state.cash / startWorth : 1,
+        cashShare: startWorth > 0 ? paid.cash / startWorth : 1,
       },
+    ],
+  });
+}
+
+export type Choice = { id: string; label: string; disabled?: boolean };
+export type EventCard = { kind: YearEvent["kind"]; title: string; body: string; choices: Choice[] };
+
+const offer = (state: GameState) => Math.min(200, Math.floor(state.cash / 10) * 10);
+
+export function eventCard(state: GameState): EventCard | null {
+  const event = state.timeline[state.year]?.event;
+  if (!event || state.choices[state.year]) return null;
+
+  if (event.kind === "crash") {
+    const last = state.history.at(-1);
+    const loss = last ? MARKET_IDS.reduce((total, id) => total + last.startHoldings[id] * state.timeline[last.year].returns[id], 0) : 0;
+    if (marketValue(state.holdings) >= 1) {
+      return {
+        kind: "crash",
+        title: "The market crashed last year",
+        body: `Your investments lost ${money(-Math.min(0, loss))}, and everyone on the news is panicking. What do you want to do?`,
+        choices: [
+          { id: "sell", label: "Sell everything before it drops more" },
+          { id: "hold", label: "Hold on and wait it out" },
+          { id: "buy", label: `Put your pocket money (${money(state.cash)}) into the Market Fund`, disabled: state.cash < 50 },
+        ],
+      };
+    }
+    return {
+      kind: "crash",
+      title: "Stocks are on sale",
+      body: "The market crashed last year, so the Market Fund costs a lot less than it did. Nobody knows whether it will keep falling or bounce back.",
+      choices: [
+        { id: "buy", label: `Buy ${money(state.cash)} of the Market Fund`, disabled: state.cash < 50 },
+        { id: "wait", label: "Stay out and wait to see what happens" },
+      ],
+    };
+  }
+
+  if (event.kind === "hype") {
+    const jump = state.timeline[state.year - 1].returns.rocket;
+    return {
+      kind: "hype",
+      title: "Everyone is buying Rocket Coin",
+      body: `Rocket Coin went up ${percent(jump)} last year. Kids at school are bragging about it, and your friend says it’s headed to the moon.`,
+      choices: [
+        { id: "buy", label: `Buy ${money(offer(state))} of Rocket Coin`, disabled: offer(state) < 50 },
+        { id: "skip", label: "Skip it" },
+      ],
+    };
+  }
+
+  if (event.kind === "tip") {
+    return {
+      kind: "tip",
+      title: "You heard a hot tip",
+      body: event.tip.text,
+      choices: [
+        { id: "buy", label: `Buy ${money(offer(state))} of ${assetById(event.tip.asset).name}`, disabled: offer(state) < 50 },
+        { id: "skip", label: "Skip it" },
+      ],
+    };
+  }
+
+  const { temptation } = event;
+  return {
+    kind: "temptation",
+    title: `Buy ${temptation.name}?`,
+    body: `${temptation.text} It costs ${money(temptation.price)}.`,
+    choices: [
+      { id: "buy", label: `Buy it for ${money(temptation.price)}`, disabled: state.cash < temptation.price },
+      { id: "skip", label: "Skip it and keep the money" },
     ],
   };
 }
 
-export type Strategy = "you" | "cash" | "bank" | "index" | "mix" | "rocket";
+export function applyChoice(state: GameState, id: string): GameState {
+  const event = state.timeline[state.year]?.event;
+  const offered = eventCard(state)?.choices.find((choice) => choice.id === id);
+  if (!event || !offered || offered.disabled) return state;
+  let next = state;
+  let amount = 0;
+
+  if (event.kind === "crash" && id === "sell") {
+    for (const asset of MARKET_IDS) next = sell(next, asset, next.holdings[asset]);
+  } else if (event.kind === "crash" && id === "buy") {
+    amount = next.cash;
+    next = buy(next, "index", amount);
+  } else if ((event.kind === "hype" || event.kind === "tip") && id === "buy") {
+    amount = offer(next);
+    next = buy(next, event.kind === "hype" ? "rocket" : event.tip.asset, amount);
+  } else if (event.kind === "temptation" && id === "buy") {
+    amount = event.temptation.price;
+    next = spend(next, event.temptation.name, amount);
+  }
+  return { ...next, choices: { ...next.choices, [state.year]: { id, amount } } };
+}
+
+export type Feedback = { tone: "good" | "watch" | "neutral"; text: string };
+
+export function eventFeedback(state: GameState, year: number): Feedback | null {
+  const event = state.timeline[year]?.event;
+  const choice = state.choices[year];
+  if (!event || !choice) return null;
+  const returns = state.timeline[year].returns;
+
+  if (event.kind === "crash") {
+    const bounce = returns.index;
+    const up = bounce > 0;
+    const texts: Record<string, Feedback> = {
+      sell: up
+        ? { tone: "watch", text: `You sold after the crash, and then the Market Fund bounced back ${percent(bounce)} this year. Selling turned a temporary drop into a real loss.` }
+        : { tone: "neutral", text: "You sold after the crash, and the market slipped again this year. Over long periods it has always come back, though, so selling usually means missing the recovery." },
+      hold: up
+        ? { tone: "good", text: `You held on, and the Market Fund bounced back ${percent(bounce)} this year. Waiting it out paid off.` }
+        : { tone: "neutral", text: "You held on even though the market dipped again this year. It has always recovered eventually, and people who wait usually come out ahead." },
+      buy: up
+        ? { tone: "good", text: `You bought while prices were low, and the Market Fund rose ${percent(bounce)}. Buying when everyone else is scared is hard, and it worked.` }
+        : { tone: "neutral", text: "You bought after the crash and the market dipped a little more. Nobody can pick the exact bottom, but buying low tends to pay off over time." },
+      wait: up
+        ? { tone: "watch", text: `You waited, and the Market Fund rose ${percent(bounce)} without you. Nobody can tell when the bottom is, which is why many people just keep investing.` }
+        : { tone: "neutral", text: "You waited, and the market slipped a little more. Nobody can tell when the bottom is, so many people just keep investing steadily." },
+    };
+    return texts[choice.id] ?? null;
+  }
+
+  if (event.kind === "hype") {
+    const change = returns.rocket;
+    if (choice.id === "buy") {
+      return {
+        tone: "watch",
+        text: `Rocket Coin ${change < 0 ? "fell" : "rose"} ${percent(change)} this year, so the ${money(choice.amount)} you put in is now worth ${money(choice.amount * (1 + change))}. Hype usually fades as fast as it shows up.`,
+      };
+    }
+    return change < 0
+      ? { tone: "good", text: `Rocket Coin fell ${percent(change)} this year. Skipping the hype kept your money safe.` }
+      : { tone: "neutral", text: `Rocket Coin rose ${percent(change)} this year. Skipping hype means sometimes missing out, but it also keeps you from the crashes.` };
+  }
+
+  if (event.kind === "tip") {
+    const { name } = assetById(event.tip.asset);
+    const change = returns[event.tip.asset];
+    if (choice.id === "buy") {
+      return change > 0
+        ? { tone: "neutral", text: `${name} went up ${percent(change)}, so the tip worked this time. Tips like that are right about as often as a coin flip, so it was mostly luck.` }
+        : { tone: "watch", text: `${name} dropped ${percent(change)}, so the ${money(choice.amount)} you put in is now ${money(choice.amount * (1 + change))}. Tips from friends and videos are usually just guesses.` };
+    }
+    return change > 0
+      ? { tone: "neutral", text: `${name} went up ${percent(change)}, so you missed out this time. Tips are a coin flip, though, and ignoring them is still a smart habit.` }
+      : { tone: "good", text: `${name} dropped ${percent(change)}. Ignoring the tip kept your money safe.` };
+  }
+
+  return choice.id === "buy"
+    ? { tone: "neutral", text: `You bought ${event.temptation.name} for ${money(choice.amount)}. Enjoy it, and remember that money you spend stops growing.` }
+    : { tone: "good", text: `You skipped ${event.temptation.name} and kept ${money(event.temptation.price)} working for you.` };
+}
+
+// A rough long-run average for the whole market, used only to show what spending could have become.
+export const LONG_RUN_RETURN = 0.08;
+
+export function couldGrowTo(amount: number, yearsLeft: number) {
+  return amount * (1 + LONG_RUN_RETURN) ** yearsLeft;
+}
+
+export type Strategy = "you" | "cash" | "bank" | "index" | "rocket";
 
 export const STRATEGY_LABELS: Record<Strategy, string> = {
   you: "Your choices",
-  cash: "Kept it all as cash",
-  bank: "All in the savings bank",
-  index: "All in the Whole Market Fund",
-  mix: "Split evenly across every building",
-  rocket: "All in Rocket Coin",
+  cash: "Kept it all in your pocket",
+  bank: "Everything in the Savings Bank",
+  index: "Everything in the Market Fund",
+  rocket: "Everything in Rocket Coin",
 };
 
-function strategyReturn(outcome: YearOutcome, strategy: Exclude<Strategy, "you">) {
-  if (strategy === "cash") return 0;
-  if (strategy === "mix") {
-    return ASSET_IDS.reduce((total, id) => total + outcome.returns[id], 0) / ASSET_IDS.length;
-  }
-  return outcome.returns[strategy];
+// Each benchmark gets the same paychecks, coins, and surprise bills you did, so only the choices differ.
+export function benchmarkPaths(state: GameState) {
+  const incomes = state.history.map((record) => record.income);
+  return {
+    you: [START_CASH, ...state.history.map((record) => record.endWorth)],
+    cash: simulate(state.timeline, incomes, "cash"),
+    bank: simulate(state.timeline, incomes, "bank"),
+    index: simulate(state.timeline, incomes, "index"),
+    rocket: simulate(state.timeline, incomes, "rocket"),
+  } satisfies Record<Strategy, number[]>;
 }
 
-// Each benchmark gets the same paychecks and surprise bills you did, so only the choices differ.
-export function benchmarkPaths(state: GameState) {
-  const paths = {} as Record<Strategy, number[]>;
-  paths.you = [START_CASH, ...state.history.map((record) => record.endWorth)];
-  for (const strategy of ["cash", "bank", "index", "mix", "rocket"] as const) {
-    let value = START_CASH;
-    const path = [value];
-    state.history.forEach((record) => {
-      const outcome = state.timeline[record.year];
-      value = (value + record.income) * (1 + strategyReturn(outcome, strategy));
-      value = Math.max(0, value + (outcome.lifeEvent?.amount ?? 0));
-      path.push(value);
-    });
-    paths[strategy] = path;
-  }
-  return paths;
+export function spentGrowth(state: GameState) {
+  return state.purchases.reduce((total, purchase) => {
+    const after = state.timeline.slice(purchase.year, state.years);
+    return total + after.reduce((value, outcome) => value * (1 + outcome.returns.index), purchase.price);
+  }, 0);
 }
 
 export type Lesson = { id: string; tone: "good" | "watch"; title: string; body: string };
-
-const percent = (value: number) => `${Math.round(value * 100)}%`;
-
-function soldAfterCrash(state: GameState) {
-  return state.trades.some((trade) => {
-    const previous = state.timeline[trade.year - 1];
-    return (
-      trade.amount <= -50 &&
-      ["index", "snacks", "bikes", "pixel"].includes(trade.asset) &&
-      previous?.economy === "crash" &&
-      state.timeline[trade.year].returns[trade.asset] > 0
-    );
-  });
-}
 
 export function lessonsFor(state: GameState): Lesson[] {
   const lessons: Lesson[] = [];
   const records = state.history;
   const avgCash = records.reduce((total, record) => total + record.cashShare, 0) / records.length;
   const maxSingle = Math.max(
-    ...records.map((record) =>
-      Math.max(record.shares.snacks, record.shares.bikes, record.shares.pixel, record.shares.rocket),
-    ),
+    ...records.map((record) => Math.max(record.shares.snacks, record.shares.pixel, record.shares.rocket)),
   );
   const spread = records.filter(
     (record) => ASSET_IDS.filter((id) => record.shares[id] >= 0.1).length >= 3,
   ).length;
-  const crashYear = state.timeline.findIndex((outcome) => outcome.economy === "crash");
-  const firstThousand = START_CASH * growthOf(state.timeline, "index");
+  const reaction = choiceFor(state, "crash");
 
-  if (soldAfterCrash(state)) {
-    const bounce = state.timeline[crashYear + 1]?.returns.index ?? 0;
+  if (reaction && soldAfterCrash(state)) {
     lessons.push({
       id: "panic",
       tone: "watch",
-      title: "You sold right after the crash",
-      body: `The year after the crash, the Whole Market Fund moved ${bounce >= 0 ? "up" : "down"} ${percent(Math.abs(bounce))}. Selling after a big drop turns a temporary loss into a permanent one.`,
+      title: "You sold after the crash",
+      body: `The year after the crash, the Market Fund went ${state.timeline[reaction.year].returns.index >= 0 ? "up" : "down"} ${percent(state.timeline[reaction.year].returns.index)}. Selling after a big drop turns a temporary loss into a permanent one.`,
     });
-  } else if (crashYear >= 0 && records[crashYear]?.shares.index > 0.1) {
+  } else if (reaction && ["hold", "buy"].includes(reaction.choice?.id ?? "")) {
     lessons.push({
       id: "calm",
       tone: "good",
-      title: "You held on through the crash",
-      body: "Your Whole Market Fund took a hit in the crash, but you didn’t sell. Staying invested is how people recover when the market bounces back.",
+      title: "You stayed calm in the crash",
+      body: "Your investments took a hit, but you didn’t sell. Staying invested is how people recover when the market bounces back.",
     });
   }
 
@@ -458,14 +777,24 @@ export function lessonsFor(state: GameState): Lesson[] {
       id: "concentrated",
       tone: "watch",
       title: "A lot of your money rode on one bet",
-      body: "At one point, more than half of your money was in a single company or coin. When one investment is that big, one bad headline can wipe out years of saving.",
+      body: "At one point, more than half of your money was in a single company or coin. When one bet is that big, one bad headline can wipe out years of saving.",
     });
   } else if (spread >= Math.ceil(records.length / 2)) {
     lessons.push({
       id: "diversified",
       tone: "good",
       title: "You spread your money out",
-      body: "Most years, your money sat in at least three places. That’s diversification, and it meant no single bad headline could sink you.",
+      body: "Most years, your money sat in at least three places. That’s called diversifying, and it meant no single bad headline could sink you.",
+    });
+  }
+
+  const spent = state.purchases.reduce((total, purchase) => total + purchase.price, 0);
+  if (spent >= 100) {
+    lessons.push({
+      id: "spending",
+      tone: "watch",
+      title: `You spent ${money(spent)} on stuff`,
+      body: `If that money had gone into the Market Fund instead, it would be worth about ${money(spentGrowth(state))} now. Spending on things you love is fine, as long as you know what it really costs.`,
     });
   }
 
@@ -473,18 +802,13 @@ export function lessonsFor(state: GameState): Lesson[] {
     lessons.push({
       id: "cash",
       tone: "watch",
-      title: "Your cash sat still while prices rose",
-      body: `Prices went up ${percent(state.priceLevel - 1)} during the game. Money in your wallet earned nothing, so each dollar bought less every year.`,
+      title: "Your pocket money sat still while prices rose",
+      body: `Prices went up ${percent(state.priceLevel - 1)} during the game. Money in your pocket earned nothing, so each dollar bought less every year.`,
     });
   }
 
-  const boughtHype = state.trades.some(
-    (trade) =>
-      trade.asset === "rocket" &&
-      trade.amount > 0 &&
-      (state.timeline[trade.year - 1]?.returns.rocket ?? 0) >= 0.5,
-  );
-  if (boughtHype) {
+  const hype = choiceFor(state, "hype");
+  if (hype?.choice?.id === "buy") {
     lessons.push({
       id: "hype",
       tone: "watch",
@@ -498,7 +822,7 @@ export function lessonsFor(state: GameState): Lesson[] {
       id: "emergency",
       tone: "watch",
       title: "A surprise bill forced you to sell",
-      body: "You didn’t have enough cash for an emergency, so investments were sold to cover it. Keeping a few hundred dollars in a savings account protects your investments.",
+      body: "You didn’t have enough in your pocket or the bank to cover an emergency, so some investments were sold to pay it. Keeping a few hundred dollars in savings protects your investments.",
     });
   }
 
@@ -506,74 +830,14 @@ export function lessonsFor(state: GameState): Lesson[] {
     id: "compound",
     tone: "good",
     title: "Time is your biggest advantage",
-    body: `$1,000 put in the Whole Market Fund at age ${START_AGE} and left alone would be worth ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(firstThousand)} by age ${START_AGE + state.years}. Starting young gives compounding more years to work.`,
+    body: `$1,000 put in the Market Fund at age ${START_AGE} and left alone would be worth ${money(START_CASH * growthOf(state.timeline, "index"))} by age ${ageAt(state.years)}. Starting young gives your money more years to grow on top of itself.`,
   });
 
   return lessons;
 }
 
-export type Profile = { title: string; description: string };
-
-export function profileFor(state: GameState): Profile {
-  const totals = emptyHoldings();
-  let cash = 0;
-  for (const record of state.history) {
-    for (const id of ASSET_IDS) totals[id] += record.shares[id];
-    cash += record.cashShare;
-  }
-  const safe = totals.bank + totals.bonds;
-  const single = totals.snacks + totals.bikes + totals.pixel;
-  const groups = [
-    { key: "cash", value: cash },
-    { key: "safe", value: safe },
-    { key: "index", value: totals.index },
-    { key: "single", value: single },
-    { key: "rocket", value: totals.rocket },
-  ].sort((a, b) => b.value - a.value);
-  const sum = groups.reduce((total, group) => total + group.value, 0) || 1;
-  const [top] = groups;
-
-  if (top.value / sum < 0.45) {
-    return {
-      title: "The Balanced Builder",
-      description: "You mixed safe places with growth, so no single surprise could knock you out.",
-    };
-  }
-  const profiles: Record<string, Profile> = {
-    cash: {
-      title: "The Wallet Keeper",
-      description: "You kept most of your money as cash. It never dropped, but it never grew either.",
-    },
-    safe: {
-      title: "The Steady Saver",
-      description: "You chose safety first with savings and bonds. Your money grew slowly and never had a scary year.",
-    },
-    index: {
-      title: "The Index Investor",
-      description: "You bet on the whole economy instead of picking winners, which is what many professionals recommend.",
-    },
-    single: {
-      title: "The Stock Picker",
-      description: "You hunted for winning companies. It’s exciting, but a single company can surprise you in either direction.",
-    },
-    rocket: {
-      title: "The Thrill Seeker",
-      description: "You went big on hype. Sometimes it pays, but most hype coins end up crashing.",
-    },
-  };
-  return profiles[top.key];
-}
-
-export function riskLabel(risk: number) {
-  return ["Very low", "Low", "Medium", "High", "Very high"][risk - 1];
-}
-
 export function hypeNote(state: GameState) {
   const last = state.timeline[state.year - 1];
   if (!last || last.returns.rocket < 0.5) return null;
-  return `Rocket Coin jumped ${percent(last.returns.rocket)} last year, and everyone says it will keep climbing. Remember that a big jump doesn’t tell you what happens next.`;
-}
-
-export function assetName(id: AssetId) {
-  return assetById(id).name;
+  return `Rocket Coin jumped ${percent(last.returns.rocket)} last year, and everyone says it will keep climbing. A big jump doesn’t tell you what happens next.`;
 }

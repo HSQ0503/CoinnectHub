@@ -38,8 +38,8 @@ export default function GameCards() {
           </span>
           <h3>Market Street</h3>
           <p>
-            Explore a 3D town, collect your paychecks, and invest them across
-            ten years of booms, crashes, and surprise bills.
+            Pick a dream, earn a paycheck, and grow your money in a 3D town
+            through ten years of booms, crashes, hype, and surprise bills.
           </p>
           <div className="game-card-action">
             Play Market Street{" "}
