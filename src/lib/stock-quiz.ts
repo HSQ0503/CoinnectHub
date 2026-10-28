@@ -11,8 +11,8 @@ export type Scenario = {
 export const ROUND_SIZE = 5;
 
 export const DIRECTION_LABELS: Record<Direction, string> = {
-  up: "More likely to rise",
-  down: "More likely to fall",
+  up: "Rise",
+  down: "Fall",
 };
 
 // Every company is made up. Each scenario gives enough context for one reasonable answer.

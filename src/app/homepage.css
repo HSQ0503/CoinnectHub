@@ -622,6 +622,49 @@
 .join-inner > .button-primary {
   flex-shrink: 0;
 }
+.follow-section {
+  padding: 88px 0;
+  background: #eaf4fc;
+}
+.follow-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  align-items: center;
+  gap: 60px;
+}
+.follow-copy .body-copy {
+  max-width: 460px;
+  margin-top: 20px;
+}
+.follow-buttons {
+  display: grid;
+  gap: 14px;
+  justify-items: stretch;
+}
+.follow-button {
+  display: inline-flex;
+  min-height: 60px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 30px;
+  border-radius: 999px;
+  background: #061b45;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgb(6 27 69 / 0.14);
+  transition:
+    background-color 180ms,
+    transform 180ms;
+}
+.follow-button:hover {
+  background: #0875cf;
+  transform: translateY(-2px);
+}
+.follow-button svg {
+  flex-shrink: 0;
+}
 .site-footer {
   background: #fff;
 }
@@ -696,8 +739,8 @@
 }
 .founder-story {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  gap: 84px;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 72px;
 }
 .founder-aside {
   align-self: start;
@@ -706,13 +749,13 @@
 }
 .founder-portrait {
   width: 100%;
-  max-width: 240px;
+  max-width: 220px;
   height: auto;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
-  object-position: 50% 30%;
-  border-radius: 24px;
-  margin-bottom: 22px;
+  object-position: 50% 52%;
+  border-radius: 22px;
+  margin-bottom: 16px;
   background: #eaf4fc;
 }
 .founder-aside h2 {
@@ -723,7 +766,20 @@
 .founder-aside p {
   font-size: 13px;
   color: #526078;
-  margin-top: 8px;
+  margin-top: 6px;
+}
+.founder-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0875cf;
+  text-underline-offset: 4px;
+}
+.founder-email:hover {
+  text-decoration: underline;
 }
 .founder-article blockquote {
   font-family: var(--font-sora), sans-serif;
@@ -1063,9 +1119,19 @@
     text-align: center;
   }
   .founder-portrait {
-    max-width: 195px;
+    max-width: 180px;
     margin-inline: auto;
-    margin-bottom: 18px;
+    margin-bottom: 14px;
+  }
+  .follow-section {
+    padding: 64px 0;
+  }
+  .follow-inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+  .follow-buttons {
+    max-width: 440px;
   }
   .workshop-grid {
     grid-template-columns: minmax(0, 1fr);

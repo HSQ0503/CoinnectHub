@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Check, HeartHandshake, Sparkles } from "lucide-react";
 import HeroFinanceLesson from "./hero-finance-lesson";
+import FollowSection from "./follow-section";
 import GameCards from "./game-cards";
 import JoinBanner from "./join-banner";
 
@@ -89,7 +90,7 @@ export default function Homepage() {
               others have to work it out on their own.
             </p>
             <p>
-              That gap is why João Ferla started CoinnectHub. Through free games,
+              That gap is why CoinnectHub was created. Through free games,
               short explanations, and middle school workshops, we make room for
               the questions students actually want to ask.
             </p>
@@ -101,6 +102,7 @@ export default function Homepage() {
         </div>
       </section>
       <JoinBanner />
+      <FollowSection />
     </div>
   );
 }

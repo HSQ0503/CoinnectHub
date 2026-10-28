@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { MessageCircle, Coins, Compass } from "lucide-react";
+import { MessageCircle, Coins, Compass, Mail } from "lucide-react";
 import CoinMascot from "@/components/coin-mascot";
 import JoinBanner from "@/components/join-banner";
 
@@ -55,10 +55,13 @@ export default function AboutPage() {
             width={640}
             height={961}
             className="founder-portrait"
-            sizes="(max-width: 767px) 195px, 240px"
+            sizes="(max-width: 767px) 180px, 220px"
           />
           <h2>João Ferla</h2>
           <p>Founder of CoinnectHub</p>
+          <a href="mailto:jguiferla@gmail.com" className="founder-email">
+            <Mail size={14} aria-hidden="true" /> jguiferla@gmail.com
+          </a>
         </aside>
         <article className="founder-article">
           <h2 className="sr-only">Why CoinnectHub began</h2>

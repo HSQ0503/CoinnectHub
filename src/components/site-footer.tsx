@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowUpRight, Instagram } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { Brand } from "./site-header";
+import { InstagramIcon, SOCIAL_LINKS, TikTokIcon } from "./social-icons";
 
 export default function SiteFooter() {
   return (
@@ -22,12 +23,13 @@ export default function SiteFooter() {
           </div>
           <div className="footer-links">
             <p>Keep the conversation going</p>
-            <a
-              href="https://www.instagram.com/coinnect.hub/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Instagram size={16} aria-hidden="true" /> @coinnect.hub{" "}
+            <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noreferrer">
+              <InstagramIcon size={16} /> Instagram{" "}
+              <ArrowUpRight size={14} aria-hidden="true" />
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+            <a href={SOCIAL_LINKS.tiktok} target="_blank" rel="noreferrer">
+              <TikTokIcon size={15} /> TikTok{" "}
               <ArrowUpRight size={14} aria-hidden="true" />
               <span className="sr-only"> (opens in a new tab)</span>
             </a>

@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   Check,
+  CircleCheck,
+  CircleX,
   Info,
   Newspaper,
   RotateCcw,
@@ -116,10 +118,10 @@ export default function StockQuiz() {
                     {right ? <Check size={16} /> : <X size={16} />}
                   </span>
                   <span>
-                    <strong>{item.company}</strong> was{" "}
+                    <strong>{item.company}</strong> was more likely to{" "}
                     {DIRECTION_LABELS[item.direction].toLowerCase()}.
                     {!right &&
-                      ` You picked “${item.direction === "up" ? "fall" : "rise"}”.`}
+                      ` You picked ${DIRECTION_LABELS[answers[at]]}.`}
                   </span>
                 </li>
               );
@@ -179,17 +181,19 @@ export default function StockQuiz() {
         </p>
         <p className="quiz-news">{scenario.news}</p>
         <h2 className="quiz-ask">
-          Based on this news, is the stock more likely to go up or down?
+          Based on this news, is the stock more likely to rise or fall?
         </h2>
         <div className="quiz-choices">
           {(["up", "down"] as const).map((direction) => {
             const Icon = direction === "up" ? TrendingUp : TrendingDown;
+            const isCorrect = Boolean(answer) && direction === scenario.direction;
+            const isMiss = Boolean(answer) && direction === answer && !isCorrect;
             const state = !answer
               ? ""
-              : direction === scenario.direction
-                ? "is-expected"
-                : direction === answer
-                  ? "is-missed"
+              : isCorrect
+                ? "is-correct"
+                : isMiss
+                  ? "is-yours"
                   : "is-faded";
             return (
               <button
@@ -202,8 +206,15 @@ export default function StockQuiz() {
               >
                 <Icon size={26} aria-hidden="true" />
                 {DIRECTION_LABELS[direction]}
-                {answer && direction === scenario.direction && (
-                  <span className="quiz-choice-tag">Expected</span>
+                {isCorrect && (
+                  <span className="quiz-choice-tag is-correct">
+                    <Check size={13} aria-hidden="true" /> Correct answer
+                  </span>
+                )}
+                {isMiss && (
+                  <span className="quiz-choice-tag is-yours">
+                    <X size={13} aria-hidden="true" /> Your answer
+                  </span>
                 )}
               </button>
             );
@@ -219,13 +230,12 @@ export default function StockQuiz() {
               <p className="quiz-verdict">
                 {correct ? (
                   <>
-                    <Check size={18} aria-hidden="true" /> That matches the
-                    expected direction
+                    <CircleCheck size={20} aria-hidden="true" /> Correct!
                   </>
                 ) : (
                   <>
-                    <X size={18} aria-hidden="true" /> Not the expected
-                    direction this time
+                    <CircleX size={20} aria-hidden="true" /> Not quite. The
+                    correct answer is {DIRECTION_LABELS[scenario.direction]}.
                   </>
                 )}
               </p>
